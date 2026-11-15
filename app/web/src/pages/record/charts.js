@@ -99,7 +99,7 @@ export function paintLivePitch(canvas, frames = [], floorHz = 160, opts = {}) {
     ctx.fillText(String(refHz), padL - 6, y);
   }
 
-  // 专属安全托底线（标签放到右侧内部，避免与左侧刻度或中间提示相撞）
+  // 专属安全托底线（标签默认置于虚线下方右侧，避免与上方居中提示气泡及高音区曲线打架）
   if (floorHz && floorHz >= minHz && floorHz <= maxHz) {
     const yFloor = toY(floorHz);
     ctx.strokeStyle = mint;
@@ -116,8 +116,8 @@ export function paintLivePitch(canvas, frames = [], floorHz = 160, opts = {}) {
     const tagW = Math.ceil(ctx.measureText(tagText).width) + 14;
     const tagH = 18;
     const tagX = padL + pw - tagW - 6;
-    const tagY = yFloor - tagH - 4 >= padT + 2 ? yFloor - tagH - 4 : yFloor + 4;
-    ctx.fillStyle = css('--seal-tag-bg', 'rgba(255, 254, 252, 0.88)');
+    const tagY = (yFloor + tagH + 4 <= padT + ph) ? (yFloor + 4) : (yFloor - tagH - 4);
+    ctx.fillStyle = css('--seal-tag-bg', 'rgba(255, 254, 252, 0.92)');
     ctx.beginPath();
     ctx.roundRect(tagX, tagY, tagW, tagH, 4);
     ctx.fill();
@@ -129,13 +129,13 @@ export function paintLivePitch(canvas, frames = [], floorHz = 160, opts = {}) {
     ctx.fillText(tagText, tagX + tagW - 6, tagY + tagH / 2 + 0.5);
   }
 
-  // 绘制最近 8 秒滚动轨迹
+  // 绘制最近 8 秒滚动轨迹（空闲提示居中置于上方 >175Hz 区域，与下方托底线及标签彻底错开）
   if (!frames.length) {
     const emptyMsg = '点击麦克风，实时观察音高曲线';
     ctx.font = '12px system-ui, sans-serif';
     const mw = Math.ceil(ctx.measureText(emptyMsg).width) + 20;
     const cx = padL + pw / 2;
-    const cy = padT + ph / 2;
+    const cy = Math.round(padT + Math.max(22, (y175 - padT) * 0.5));
     ctx.fillStyle = paperSoft;
     ctx.beginPath();
     ctx.roundRect(cx - mw / 2, cy - 11, mw, 22, 11);

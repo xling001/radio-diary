@@ -189,7 +189,7 @@
   </section>
 
   <div class="ver-foot">
-    电波日记 v2.0.2 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v2.0.3 · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 
