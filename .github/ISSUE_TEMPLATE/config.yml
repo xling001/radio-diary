@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 理论知识库与声学常模讨论
+    url: https://github.com/xling001/transvoice-mandarin-handbook/issues
+    about: 关于发声解剖、声学常模或训练方法理论的内容，请前往独立知识库仓库讨论

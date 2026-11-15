@@ -4,10 +4,11 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/xling001/radio-diary/releases/tag/v2.0.1"><img src="https://img.shields.io/badge/Release-v2.0.1-f5a9b8.svg" alt="Release v2.0.1" /></a>
-  <img src="https://img.shields.io/badge/Focus-MtF%20%2F%20Transfemme-5BCEFA.svg" alt="MtF Focused" />
+  <a href="https://github.com/xling001/radio-diary/releases/tag/v2.0.1"><img src="https://img.shields.io/badge/Release-v2.0.1-5BCEFA.svg" alt="Release v2.0.1" /></a>
+  <img src="https://img.shields.io/badge/Focus-MtF%20%2F%20Transfemme-F5A9B8.svg" alt="MtF Focused" />
   <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-7BB4D8.svg" alt="100% Offline" />
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20Web-E6B8A2.svg" alt="Platform Android and Web" />
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-f5a9b8.svg" alt="PRs Welcome" /></a>
 </p>
 
 # 电波日记 MtF 版 (Radio Diary · MtF Edition)
@@ -152,6 +153,14 @@ node .\app\scripts\test-audit-round.mjs
 
 ---
 
+## 🤝 参与贡献与社区规范
+
+- **贡献指南**：提交 Issue 或 Pull Request 前请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
+- **行为准则**：请共同维护友善、去病理化、尊重多元性别的社区环境，详见 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
+- **安全与隐私**：如发现本地存储、导出或 WebView 权限边界相关问题，请参考 [SECURITY.md](SECURITY.md)。
+
+---
+
 ## 📄 开源许可证
 
-本项目基于 [MIT License](LICENSE) 开源。
+本项目基于 [MIT License](LICENSE) 开源；构建期依赖与算法参考声明详见 [LICENSE-THIRD-PARTY.md](LICENSE-THIRD-PARTY.md)。
