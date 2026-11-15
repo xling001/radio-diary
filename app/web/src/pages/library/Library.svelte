@@ -52,6 +52,29 @@
     return categories.find((c) => c.id === catId)?.label || '未分类';
   }
 
+  const visibleTags = $derived.by(() => {
+    const pool = selectedCat === 'all' ? allSets : allSets.filter((s) => s.category === selectedCat);
+    const set = new Set();
+    for (const item of pool) {
+      for (const t of item.tags || []) set.add(t);
+    }
+    return [...set];
+  });
+
+  function selectCategory(catId) {
+    selectedCat = catId;
+    if (selectedTag !== 'all') {
+      const pool = catId === 'all' ? allSets : allSets.filter((s) => s.category === catId);
+      const hasTag = pool.some((s) => (s.tags || []).includes(selectedTag));
+      if (!hasTag) selectedTag = 'all';
+    }
+  }
+
+  function previewLineText(line) {
+    const raw = typeof line === 'string' ? line : (line?.text || '');
+    return raw.replace(/\/换气\/\s*/g, '').replace(/｜/g, '');
+  }
+
   const filteredSets = $derived.by(() => {
     return allSets.filter((s) => {
       if (selectedCat !== 'all' && s.category !== selectedCat) return false;
@@ -219,7 +242,7 @@
       <button
         type="button"
         class="filter-chip {selectedCat === 'all' ? 'active' : ''}"
-        onclick={() => { selectedCat = 'all'; }}
+        onclick={() => selectCategory('all')}
       >
         全部 ({allSets.length})
       </button>
@@ -228,7 +251,7 @@
           <button
             type="button"
             class="filter-chip {selectedCat === cat.id ? 'active' : ''}"
-            onclick={() => { selectedCat = cat.id; }}
+            onclick={() => selectCategory(cat.id)}
           >
             {cat.label}
           </button>
@@ -246,7 +269,7 @@
       {/each}
     </div>
 
-    {#if allTags.length}
+    {#if visibleTags.length}
       <div class="tag-filter-row">
         <span class="tag-label">标签</span>
         <button
@@ -256,7 +279,7 @@
         >
           不限
         </button>
-        {#each allTags as t}
+        {#each visibleTags as t}
           <button
             type="button"
             class="tag-filter-pill {selectedTag === t ? 'active' : ''}"
@@ -343,7 +366,7 @@
 
         <div class="set-preview">
           {#each s.lines.slice(0, 2) as line}
-            <div class="preview-line">· {typeof line === 'string' ? line : (line?.text || '')}</div>
+            <div class="preview-line">· {previewLineText(line)}</div>
           {/each}
         </div>
 
