@@ -1,0 +1,36 @@
+# ---- Build artifacts ----
+app/build/
+*.apk
+*.idsig
+*.aab
+*.dex
+*.class
+app/web/dist/
+app/web/.vite/
+
+# ---- Signing keys (never commit) ----
+*.keystore
+*.jks
+*.p12
+
+# ---- Personal audio / media / local test assets ----
+*.wav
+*.m4a
+*.mp3
+*.aac
+*.ogg
+*.mp4
+
+# ---- Dependencies & caches ----
+node_modules/
+.pnpm-store/
+__pycache__/
+*.log
+*.tmp
+
+# ---- IDE / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.apk binary
+*.keystore binary
+*.png binary
+*.jpg binary
+*.mp4 binary

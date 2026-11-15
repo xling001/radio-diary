@@ -1,0 +1,456 @@
+/* ===========================================================
+   app.css — 清籁手帐 v2.0 清洁布局与基础原语
+   严格遵守三层信息架构 · Soft Crayon 粉蜡笔大圆角卡片
+   =========================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-14);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background-color 0.24s ease, color 0.2s ease;
+}
+
+body {
+  background-image: radial-gradient(var(--paper-dot, rgba(36, 43, 53, 0.045)) 1px, transparent 0);
+  background-size: 14px 14px;
+}
+
+/* ── 1. 顶部栏（纯净无冗余入口）──────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg);
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+
+.topbar-title-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#page-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: var(--fs-19);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink-1);
+  line-height: 1.25;
+}
+
+#page-sub {
+  font-size: var(--fs-11);
+  color: var(--ink-3);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--paper-card);
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.icon-btn:active {
+  transform: scale(0.94);
+  background: var(--paper-3);
+}
+
+/* 柔和轻提示小条 */
+.greeting-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--paper-card);
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow);
+  font-size: var(--fs-12);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: transform 0.14s ease, background-color 0.24s ease, border-color 0.2s ease;
+}
+.greeting-bar:active {
+  transform: scale(0.985);
+}
+.greeting-bar[hidden] {
+  display: none;
+}
+.greeting-emblem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--crayon-coral-soft);
+  color: var(--crayon-coral-ink);
+  flex-shrink: 0;
+  animation: gentleBreathe 4s ease-in-out infinite;
+}
+.greeting-kaomoji {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.greeting-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+@keyframes gentleBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.88; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .greeting-emblem,
+  .view,
+  .mic-ring-btn.is-live {
+    animation: none !important;
+  }
+}
+
+/* ── 2. 视图舞台与底部安全区 ──────────────────────────────── */
+.app-main {
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 6px 14px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom, 0px));
+}
+
+.view {
+  display: none;
+  animation: viewIn 0.18s ease-out;
+}
+.view.active {
+  display: block;
+}
+
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 3. 底部导航栏（4 Tab · 极简圆角浮岛）───────────────── */
+.nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  width: calc(100% - 28px);
+  max-width: 500px;
+  height: var(--nav-h);
+  padding: 6px 8px;
+  background: var(--paper-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lift);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  z-index: 60;
+}
+
+body.rec-on .nav {
+  display: none;
+}
+
+.nav button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  color: var(--ink-3);
+  font-family: var(--font-ui);
+  font-size: var(--fs-11);
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+
+.nav button svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav button.active {
+  color: var(--ink-1);
+  background: var(--paper-3);
+  font-weight: 600;
+}
+
+.nav button.active svg {
+  stroke: var(--crayon-coral);
+}
+
+.nav button:active {
+  transform: scale(0.95);
+}
+
+/* ── 4. v2.0 通用三层骨架（白主卡 · 浅灰子卡 · 胶囊横幅）─── */
+.crayon-stage {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.summary-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: var(--fs-14);
+  font-weight: 600;
+  color: #FFFFFF;
+  background: var(--crayon-amber-solid, var(--crayon-amber));
+  box-shadow: var(--shadow);
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.summary-capsule.tone-mint { background: var(--crayon-mint-solid, var(--crayon-mint)); }
+.summary-capsule.tone-lavender { background: var(--crayon-lavender-solid, var(--crayon-lavender)); }
+.summary-capsule.tone-amber { background: var(--crayon-amber-solid, var(--crayon-amber)); }
+.summary-capsule.tone-coral { background: var(--crayon-coral-solid, var(--crayon-coral)); }
+.summary-capsule.tone-sky { background: var(--crayon-sky-solid, var(--crayon-sky)); }
+
+.summary-sheet {
+  background: var(--paper-card);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 1px 0 var(--sheet-highlight, rgba(255, 255, 255, 0.92)), var(--shadow-card);
+  border: 1px solid var(--border-soft);
+  padding: 18px 16px;
+  margin-bottom: 14px;
+}
+
+.summary-sheet-title {
+  margin: 0 0 12px;
+  font-size: var(--fs-18);
+  font-weight: 700;
+  color: var(--ink-1);
+  letter-spacing: 0.01em;
+}
+
+.subcard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subcard {
+  background: var(--paper-3);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+  border: 1px solid var(--hairline);
+}
+
+.subcard-kicker {
+  font-size: var(--fs-11);
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+
+.subcard-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
+  margin-bottom: 5px;
+}
+
+.subcard-verdict {
+  font-size: var(--fs-15);
+  font-weight: 700;
+  color: var(--ink-1);
+  line-height: 1.35;
+  min-width: 10em;
+  flex: 1 1 auto;
+}
+
+.subcard-stat {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  color: var(--ink-2);
+  text-align: left;
+  white-space: normal;
+}
+
+.subcard-body {
+  font-size: var(--fs-13);
+  color: var(--ink-2);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── 5. 表单与开关基础控件 ───────────────────────────────── */
+.dsh-input,
+.dsh-textarea,
+.dsh-select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--paper-3);
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-14);
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.dsh-input:focus,
+.dsh-textarea:focus,
+.dsh-select:focus {
+  border-color: var(--crayon-sky);
+  background: var(--paper-card);
+}
+.dsh-textarea {
+  resize: vertical;
+  min-height: 110px;
+  line-height: 1.6;
+}
+
+/* 切换开关 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--paper-groove);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.switch-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  top: 2px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease;
+}
+.switch input:checked + .switch-slider {
+  background: var(--crayon-mint);
+  border-color: var(--crayon-mint);
+}
+.switch input:checked + .switch-slider::before {
+  transform: translateX(20px);
+}
+
+/* ── 6. 公共工具类与 Toast ───────────────────────────────── */
+.tnum {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.row-gap-sm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(12px);
+  background: var(--ink-1);
+  color: var(--paper-2);
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: var(--fs-13);
+  font-weight: 500;
+  box-shadow: var(--shadow-lift);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 950;
+  max-width: calc(100vw - 40px);
+  text-align: center;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

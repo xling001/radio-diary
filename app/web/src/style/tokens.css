@@ -1,0 +1,218 @@
+/* ===========================================================
+   tokens.css — 清籁手帐 v2.0 (Soft Crayon 粉蜡笔设计语言)
+   柔雾底色 · 纯白大圆角卡片 · 五色粉蜡笔数据色板
+   =========================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ── 1. 底色与表面层级 ───────────────────────────────────── */
+  --bg: #F4F1EC;                 /* 暖调柔白手帐画布（燕麦纸感） */
+  --paper: #F4F1EC;
+  --paper-2: #FFFEFC;            /* 对话框/弹出底 */
+  --paper-3: #F7F4EF;            /* 摘要卡内的浅暖子卡 */
+  --paper-card: #FFFEFC;         /* 主暖白卡 */
+  --paper-groove: #EAE4DC;       /* 凹槽与滑轨底 */
+  --paper-dot: rgba(52, 42, 34, 0.055);
+  --sheet-highlight: rgba(255, 255, 255, 0.92);
+
+  /* ── 2. 文字墨色层级 ─────────────────────────────────────── */
+  --ink: #26252B;
+  --ink-1: #26252B;
+  --ink-2: #525059;
+  --ink-3: #6B6975;
+  --ink-soft: #827F8C;
+
+  /* ── 3. 五色粉蜡笔数据色板 (Crayon Data Palette) ────────── */
+  --crayon-coral: #E27370;       /* H1 / 温暖珊瑚粉 */
+  --crayon-coral-solid: #BC5451; /* 深珊瑚按钮/实底（白字高对比） */
+  --crayon-coral-soft: rgba(226, 115, 112, 0.14);
+  --crayon-coral-ink: #A94442;
+
+  --crayon-amber: #E8A852;       /* H2 / 杏桃暖黄 */
+  --crayon-amber-solid: #A86B1A; /* 深杏棕按钮/实底（白字高对比） */
+  --crayon-amber-soft: rgba(232, 168, 82, 0.16);
+  --crayon-amber-ink: #8E5611;
+
+  --crayon-mint: #6EB5AF;        /* H3 / 鼠尾草青 */
+  --crayon-mint-solid: #388079;  /* 深鼠尾草按钮/实底（白字高对比） */
+  --crayon-mint-soft: rgba(110, 181, 175, 0.16);
+  --crayon-mint-ink: #276862;
+
+  --crayon-sky: #5B92C9;         /* H4 / 晴空蓝（拉开与 H5 对比） */
+  --crayon-sky-solid: #4577AB;
+  --crayon-sky-soft: rgba(91, 146, 201, 0.16);
+  --crayon-sky-ink: #2F5985;
+
+  --crayon-indigo: #3E567C;      /* H5 / 深海靛 */
+  --crayon-indigo-soft: rgba(62, 86, 124, 0.15);
+  --crayon-indigo-ink: #2E4263;
+
+  --crayon-lavender: #8A86C8;    /* 温和提示 / 雾霭紫蓝 */
+  --crayon-lavender-solid: #6E69B2;
+  --crayon-lavender-soft: rgba(138, 134, 200, 0.14);
+  --crayon-lavender-ink: #524D8C;
+
+  /* ── 4. 语义别名（兼容共享 UI 原语）───────────────────────── */
+  --rose: #E27370;
+  --rose-deep: #BC5451;
+  --rose-soft: rgba(226, 115, 112, 0.14);
+  --rose-wash: rgba(226, 115, 112, 0.08);
+  --rose-fill: #BC5451;
+  --rose-fill-hi: #CE6461;
+  --rose-on: #FFFFFF;
+  --rose-chip-ink: #A4413F;
+  --btn-primary-bg: #BC5451;
+  --btn-primary-border: #A64643;
+
+  --sage: #6EB5AF;
+  --sage-on: #FFFFFF;
+  --sage-soft: rgba(110, 181, 175, 0.16);
+  --sage-chip-ink: #276862;
+
+  --apricot: #E8A852;
+  --apricot-ink: #8E5611;
+  --apricot-soft: rgba(232, 168, 82, 0.16);
+  --apricot-chip-ink: #8E5611;
+
+  --slate: #5B92C9;
+  --slate-soft: rgba(91, 146, 201, 0.16);
+  --slate-chip-ink: #2F5985;
+
+  --danger-ink: #B34848;
+
+  /* ── 5. 象限与图例底色 ───────────────────────────────────── */
+  --quad-bg-a: #FFF6F2;          /* 上区：偏紧暖粉雾 */
+  --quad-bg-b: #FFF9EE;          /* 下区：轻柔暖杏雾 */
+  --chart-grid: rgba(52, 42, 34, 0.14);
+  --bar-outline: #55525C;
+
+  /* ── 6. 边框、投影、圆角与导航 ───────────────────────────── */
+  --border-soft: rgba(52, 42, 34, 0.09);
+  --hairline: rgba(52, 42, 34, 0.06);
+  --edge: 1px solid var(--border-soft);
+  --edge-soft: 1px solid var(--border-soft);
+
+  --shadow: 0 2px 10px rgba(52, 42, 34, 0.045), 0 1px 2px rgba(52, 42, 34, 0.03);
+  --shadow-card: 0 6px 22px rgba(52, 42, 34, 0.065), 0 1px 3px rgba(52, 42, 34, 0.04);
+  --shadow-lift: 0 14px 36px rgba(52, 42, 34, 0.11), 0 3px 10px rgba(52, 42, 34, 0.055);
+  --seal-highlight: rgba(255, 255, 255, 0.78);
+  --seal-tag-bg: rgba(255, 254, 252, 0.80);
+  --seal-shadow: 0 8px 20px -8px rgba(52, 42, 34, 0.16), 0 2px 6px rgba(52, 42, 34, 0.08);
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius: 20px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+
+  --nav-h: 64px;
+  --topbar-h: 58px;
+
+  /* ── 7. 字体与严格受控字阶 ───────────────────────────────── */
+  --font-ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", system-ui, -apple-system, sans-serif;
+  --font-title: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-data: "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+
+  --fs-10: 10px;
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-15: 15px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-19: 19px;
+  --fs-21: 21px;
+  --fs-24: 24px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #141921;
+  --paper: #141921;
+  --paper-2: #1C232E;
+  --paper-3: #242D3B;
+  --paper-card: #1C232E;
+  --paper-groove: #283242;
+  --paper-dot: rgba(234, 238, 245, 0.035);
+  --sheet-highlight: rgba(255, 255, 255, 0.06);
+
+  --ink: #EAEEF5;
+  --ink-1: #EAEEF5;
+  --ink-2: #B0BBCB;
+  --ink-3: #7E8B9E;
+  --ink-soft: #667387;
+
+  --crayon-coral: #E88683;
+  --crayon-coral-solid: #C45E5B;
+  --crayon-coral-soft: rgba(232, 134, 131, 0.18);
+  --crayon-coral-ink: #F5B5B3;
+
+  --crayon-amber: #F0B663;
+  --crayon-amber-solid: #B57B24;
+  --crayon-amber-soft: rgba(240, 182, 99, 0.18);
+  --crayon-amber-ink: #F8D19A;
+
+  --crayon-mint: #7BC2BC;
+  --crayon-mint-solid: #3F857F;
+  --crayon-mint-soft: rgba(123, 194, 188, 0.18);
+  --crayon-mint-ink: #AEE2DD;
+
+  --crayon-sky: #7BAADF;
+  --crayon-sky-solid: #4A78AC;
+  --crayon-sky-soft: rgba(123, 170, 223, 0.18);
+  --crayon-sky-ink: #B3D1F2;
+
+  --crayon-indigo: #6C8CB5;
+  --crayon-indigo-soft: rgba(108, 140, 181, 0.20);
+  --crayon-indigo-ink: #B4C8E2;
+
+  --crayon-lavender: #9E9AD8;
+  --crayon-lavender-solid: #736EB6;
+  --crayon-lavender-soft: rgba(158, 154, 216, 0.18);
+  --crayon-lavender-ink: #C9C6F2;
+
+  --rose: #E88683;
+  --rose-deep: #D96C69;
+  --rose-soft: rgba(232, 134, 131, 0.18);
+  --rose-wash: rgba(232, 134, 131, 0.10);
+  --rose-fill: #D96C69;
+  --rose-fill-hi: #E88683;
+  --rose-on: #FFFFFF;
+  --rose-chip-ink: #F5B5B3;
+  --btn-primary-bg: #C97673;
+  --btn-primary-border: #B86764;
+
+  --sage: #7BC2BC;
+  --sage-on: #122120;
+  --sage-soft: rgba(123, 194, 188, 0.18);
+  --sage-chip-ink: #AEE2DD;
+
+  --apricot: #F0B663;
+  --apricot-ink: #F8D19A;
+  --apricot-soft: rgba(240, 182, 99, 0.18);
+  --apricot-chip-ink: #F8D19A;
+
+  --slate: #7BAADF;
+  --slate-soft: rgba(123, 170, 223, 0.18);
+  --slate-chip-ink: #B3D1F2;
+
+  --danger-ink: #F08A8A;
+
+  --quad-bg-a: #27222B;
+  --quad-bg-b: #242933;
+  --chart-grid: rgba(176, 187, 203, 0.18);
+  --bar-outline: #90A0B8;
+
+  --border-soft: rgba(234, 238, 245, 0.09);
+  --hairline: rgba(234, 238, 245, 0.06);
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  --shadow-card: 0 8px 26px rgba(0, 0, 0, 0.32);
+  --shadow-lift: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --seal-highlight: rgba(255, 255, 255, 0.08);
+  --seal-tag-bg: rgba(28, 35, 46, 0.72);
+  --seal-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.28);
+}

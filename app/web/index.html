@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>电波日记 · 嗓音练习</title>
+  <link rel="icon" href="./favicon.ico" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('tv.theme');
+        if (t !== 'dark' && t !== 'light') {
+          t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-title-wrap">
+        <h1 id="page-title">练习</h1>
+        <div id="page-sub">自由说 · 读素材 · 做测试</div>
+      </div>
+      <div class="topbar-actions">
+        <button id="theme-btn" class="icon-btn" type="button" aria-label="切换深浅色主题">
+          <svg id="theme-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <button id="btn-settings" class="icon-btn" type="button" data-go="settings" aria-label="设置">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="page-greeting" class="greeting-bar" role="button" tabindex="0" aria-label="换一句温和提示">
+      <span class="greeting-emblem" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M3 12h2.5l2-5 3.5 10 3-8 2.5 5 2-2H21"></path>
+        </svg>
+      </span>
+      <span id="greeting-kaomoji" class="greeting-kaomoji">(｡･ω･｡)ﾉ</span>
+      <span id="greeting-text" class="greeting-text">喝口温水，先轻轻叹口气吧～</span>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="view active" id="view-record" data-view="record">
+      <div id="svelte-record-root"></div>
+    </section>
+
+    <section class="view" id="view-analysis" data-view="analysis">
+      <div id="svelte-analysis-root"></div>
+    </section>
+
+    <section class="view" id="view-history" data-view="history">
+      <div id="svelte-history-root"></div>
+    </section>
+
+    <section class="view" id="view-mindset" data-view="mindset">
+      <div id="svelte-mindset-root"></div>
+    </section>
+
+    <section class="view" id="view-library" data-view="library">
+      <div id="svelte-library-root"></div>
+    </section>
+
+    <section class="view" id="view-settings" data-view="settings">
+      <div id="svelte-settings-root"></div>
+    </section>
+  </main>
+
+  <nav class="nav" aria-label="主导航">
+    <button type="button" class="active" data-go="record">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="22"></line>
+      </svg>
+      <span>练习</span>
+    </button>
+    <button type="button" data-go="analysis">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <line x1="6" y1="20" x2="6" y2="10"></line>
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <line x1="18" y1="20" x2="18" y2="14"></line>
+      </svg>
+      <span>分析</span>
+    </button>
+    <button type="button" data-go="history">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+        <line x1="8" y1="9" x2="16" y2="9"></line>
+        <line x1="8" y1="13" x2="16" y2="13"></line>
+        <line x1="8" y1="17" x2="13" y2="17"></line>
+      </svg>
+      <span>手账</span>
+    </button>
+    <button type="button" data-go="mindset">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+      </svg>
+      <span>指南</span>
+    </button>
+  </nav>
+
+  <div class="toast" id="dsh-toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
