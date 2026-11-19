@@ -2,12 +2,14 @@
   import { onMount } from 'svelte';
   import { exportBatchMarkdown, normalizeStats, pitchName } from '../../core/index.js';
   import { TakeStore, subscribeTakes } from '../../store/takes.js';
+  import { SelfCheckStore } from '../../store/selfCheck.js';
   import { ui } from '../../state/ui.svelte.js';
   import { settings } from '../../state/settings.svelte.js';
   import { confirmDlg } from '../../ui/dialog.js';
   import Empty from '../../ui/Empty.svelte';
   import { audioSession } from '../record/audioSession.svelte.js';
   import { paintHeatmap, paintTrendChart } from './charts.js';
+  import SelfCheckModal from './SelfCheckModal.svelte';
 
   const OPEN_MAP_KEY = 'tv.jGroupOpenMap';
 
@@ -21,6 +23,37 @@
 
   let heatmapCanvas = $state(null);
   let trendCanvas = $state(null);
+
+  let selfChecks = $state(SelfCheckStore.all());
+  let showSelfCheckModal = $state(false);
+  let showSelfHistory = $state(false);
+
+  const latestSelfCheck = $derived(selfChecks[0] || null);
+  const selfCycleHint = $derived.by(() => {
+    if (!selfChecks.length) return '建议每周记一次';
+    const days = SelfCheckStore.daysSinceLatest();
+    if (days === 0) return '今天已记录 ✓';
+    if (days !== null && days < 7) return `距上次 ${days} 天`;
+    return `距上次 ${days ?? 7} 天 · 可记一次`;
+  });
+
+  function reloadSelfChecks() {
+    selfChecks = SelfCheckStore.all();
+  }
+
+  function handleSaveSelfCheck(entry) {
+    SelfCheckStore.add(entry);
+    reloadSelfChecks();
+    showMsg('已将这次主观自评收进手帐');
+  }
+
+  async function handleDeleteSelfCheck(item) {
+    const ok = await confirmDlg('删掉这条主观自评？', '删掉后无法恢复，录音记录不会受影响。', '删掉', '先留着', true);
+    if (!ok) return;
+    selfChecks = SelfCheckStore.remove(item.id);
+    if (!selfChecks.length) showSelfHistory = false;
+    showMsg('已删除一条主观自评');
+  }
 
   function loadOpenMap() {
     try {
@@ -54,7 +87,10 @@
   onMount(() => {
     refreshTakes();
     const unsubUi = ui.subscribe((route) => {
-      if (route.view === 'history') refreshTakes();
+      if (route.view === 'history') {
+        refreshTakes();
+        reloadSelfChecks();
+      }
     });
     const unsubTakes = subscribeTakes(() => refreshTakes());
     const onTheme = () => requestAnimationFrame(drawCharts);
@@ -269,7 +305,81 @@
 
       <canvas bind:this={trendCanvas} class="trend-canvas"></canvas>
     </div>
+  {/if}
 
+  <!-- 主观自评小记（无录音时也可独立记录，建议每周一次） -->
+  <div class="summary-sheet self-card">
+    <div class="self-head">
+      <div>
+        <div class="self-title-row">
+          <span class="self-title">每周主观自评</span>
+          <span class="self-cycle-pill">{selfCycleHint}</span>
+        </div>
+        <div class="self-sub">不看曲线，只记当下嗓音松弛度与说话自在感</div>
+      </div>
+      <button type="button" class="self-add-btn" onclick={() => { showSelfCheckModal = true; }}>
+        + 写自评
+      </button>
+    </div>
+
+    {#if latestSelfCheck}
+      <div class="self-latest">
+        <div class="self-latest-top">
+          <span class="mood-tag tone-{latestSelfCheck.tone || 'sky'}">{latestSelfCheck.mood}</span>
+          <span class="self-date tnum">{dayKey(latestSelfCheck.ts)} {formatTimeOnly(latestSelfCheck.ts)}</span>
+          {#if selfChecks.length > 1}
+            <button type="button" class="self-hist-toggle" onclick={() => { showSelfHistory = !showSelfHistory; }}>
+              {showSelfHistory ? '收起历史' : `全部 ${selfChecks.length} 条`}
+            </button>
+          {:else}
+            <button type="button" class="self-del-link" onclick={() => handleDeleteSelfCheck(latestSelfCheck)}>
+              删除
+            </button>
+          {/if}
+        </div>
+        <div class="self-scores tnum">
+          <span>舒适 {latestSelfCheck.comfort}/5</span>
+          <span>·</span>
+          <span>专注 {latestSelfCheck.focus}/5</span>
+          <span>·</span>
+          <span>自在 {latestSelfCheck.ease}/5</span>
+        </div>
+        {#if latestSelfCheck.note}
+          <div class="self-note">{latestSelfCheck.note}</div>
+        {/if}
+      </div>
+
+      {#if showSelfHistory && selfChecks.length > 1}
+        <div class="self-hist-list">
+          {#each selfChecks as sc (sc.id)}
+            <div class="self-hist-row">
+              <div class="self-hist-main">
+                <div class="self-latest-top">
+                  <span class="mood-tag tone-{sc.tone || 'sky'}">{sc.mood}</span>
+                  <span class="self-date tnum">{dayKey(sc.ts)} {formatTimeOnly(sc.ts)}</span>
+                </div>
+                <div class="self-scores tnum">
+                  <span>舒适 {sc.comfort}/5</span>
+                  <span>·</span>
+                  <span>专注 {sc.focus}/5</span>
+                  <span>·</span>
+                  <span>自在 {sc.ease}/5</span>
+                </div>
+                {#if sc.note}
+                  <div class="self-note">{sc.note}</div>
+                {/if}
+              </div>
+              <button type="button" class="self-del-link" onclick={() => handleDeleteSelfCheck(sc)}>
+                删除
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
+  </div>
+
+  {#if !loading && takes.length}
     <!-- 第二层：筛选与批量对比条 -->
     <div class="filter-bar">
       <div class="row-gap-sm">
@@ -399,6 +509,12 @@
     </div>
   {/if}
 </div>
+
+<SelfCheckModal
+  open={showSelfCheckModal}
+  onsave={handleSaveSelfCheck}
+  onclose={() => { showSelfCheckModal = false; }}
+/>
 
 <style>
   .hist-page {
@@ -725,5 +841,125 @@
   }
   .fav-btn.is-fav {
     color: var(--crayon-amber);
+  }
+
+  .self-card {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .self-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .self-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .self-title {
+    font-size: var(--fs-14);
+    font-weight: 700;
+    color: var(--ink-1);
+  }
+  .self-cycle-pill {
+    font-size: var(--fs-10);
+    font-weight: 600;
+    color: var(--crayon-lavender-ink);
+    background: var(--crayon-lavender-soft);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .self-sub {
+    font-size: var(--fs-11);
+    color: var(--ink-3);
+    margin-top: 3px;
+  }
+  .self-add-btn {
+    border: none;
+    background: var(--crayon-coral-soft);
+    color: var(--crayon-coral-ink);
+    font-size: var(--fs-12);
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .self-latest {
+    background: var(--paper-3);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .self-latest-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .self-date {
+    font-size: var(--fs-11);
+    color: var(--ink-3);
+    margin-right: auto;
+  }
+  .self-scores {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-12);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .self-note {
+    font-size: var(--fs-12);
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .self-hist-toggle,
+  .self-del-link {
+    border: none;
+    background: transparent;
+    font-size: var(--fs-11);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+  .self-hist-toggle {
+    color: var(--crayon-sky-ink);
+  }
+  .self-del-link {
+    color: var(--ink-3);
+  }
+  .self-hist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--hairline);
+    padding-top: 8px;
+  }
+  .self-hist-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--paper-3);
+    border: 1px solid var(--hairline);
+  }
+  .self-hist-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
   }
 </style>

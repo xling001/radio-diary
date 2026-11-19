@@ -8,6 +8,65 @@
   import { confirmDlg } from '../../ui/dialog.js';
 
   const DUR_STEPS = [60, 90, 120, 180];
+  const APP_VERSION = '2.0.4';
+  const RELEASES_LATEST_URL = 'https://github.com/xling001/radio-diary/releases/latest';
+  const RELEASES_API_URL = 'https://api.github.com/repos/xling001/radio-diary/releases/latest';
+
+  let updateState = $state('idle'); // 'idle' | 'checking' | 'latest' | 'available' | 'android' | 'error'
+  let updateTag = $state('');
+  let updateUrl = $state(RELEASES_LATEST_URL);
+  let updateNote = $state('');
+
+  function compareSemver(a, b) {
+    const pa = String(a || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+    const pb = String(b || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const da = pa[i] || 0;
+      const db = pb[i] || 0;
+      if (da > db) return 1;
+      if (da < db) return -1;
+    }
+    return 0;
+  }
+
+  async function handleCheckUpdate() {
+    const isAndroidShell = typeof window !== 'undefined' && Boolean(window.DshFile);
+    if (isAndroidShell) {
+      updateState = 'android';
+      updateUrl = RELEASES_LATEST_URL;
+      updateNote = `当前为 v${APP_VERSION}。Android 客户端为守住「零联网权限」隐私边界，不内置联网请求；点下方按钮即可在系统浏览器打开 GitHub Releases 查看最新版。`;
+      return;
+    }
+
+    updateState = 'checking';
+    updateNote = '';
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 6500) : null;
+    try {
+      const res = await fetch(RELEASES_API_URL, {
+        headers: { Accept: 'application/vnd.github+json' },
+        signal: ctrl ? ctrl.signal : undefined,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const latestTag = String(data?.tag_name || '').trim();
+      updateTag = latestTag;
+      updateUrl = String(data?.html_url || RELEASES_LATEST_URL);
+      if (latestTag && compareSemver(latestTag, APP_VERSION) > 0) {
+        updateState = 'available';
+        updateNote = `发现新版本 ${latestTag}（当前 v${APP_VERSION}），可前往 Releases 页面下载更新。`;
+      } else {
+        updateState = 'latest';
+        updateNote = `当前 v${APP_VERSION} 已经是最新版本。`;
+      }
+    } catch {
+      updateState = 'error';
+      updateUrl = RELEASES_LATEST_URL;
+      updateNote = '暂时没连上 GitHub，可直接点下方链接前往 Releases 页面查看。';
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
 
   onMount(() => {
     settings.refreshMetrics();
@@ -188,8 +247,43 @@
     </div>
   </section>
 
+  <!-- 版本与手动检查更新（绝不自动联网） -->
+  <section class="summary-sheet set-card">
+    <h2 class="summary-sheet-title">版本与更新</h2>
+    <div class="set-row">
+      <div>
+        <div class="set-lbl tnum">当前版本 v{APP_VERSION}</div>
+        <div class="set-desc">平时完全离线运行，仅在你手动点击时才查看版本</div>
+      </div>
+      <button
+        type="button"
+        class="mini-check-btn"
+        disabled={updateState === 'checking'}
+        onclick={handleCheckUpdate}
+      >
+        {updateState === 'checking' ? '查询中…' : '检查更新'}
+      </button>
+    </div>
+
+    {#if updateState !== 'idle' && updateNote}
+      <div class="update-box tone-{updateState === 'available' ? 'coral' : (updateState === 'latest' ? 'mint' : 'sky')}">
+        <p class="update-msg">{updateNote}</p>
+        {#if updateState === 'available' || updateState === 'android' || updateState === 'error'}
+          <a
+            class="update-link"
+            href={updateUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            前往 GitHub Releases 查看{updateTag ? ` (${updateTag})` : ''} ↗
+          </a>
+        {/if}
+      </div>
+    {/if}
+  </section>
+
   <div class="ver-foot">
-    电波日记 v2.0.3 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v2.0.4 · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 
@@ -337,5 +431,41 @@
     font-size: var(--fs-11);
     color: var(--ink-3);
     padding: 4px 0 8px;
+  }
+
+  .update-box {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--paper-3);
+    border: 1px solid var(--hairline);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .update-box.tone-coral {
+    background: var(--crayon-coral-soft);
+    border-color: var(--crayon-coral);
+  }
+  .update-box.tone-mint {
+    background: var(--crayon-mint-soft);
+    border-color: var(--crayon-mint);
+  }
+  .update-msg {
+    margin: 0;
+    font-size: var(--fs-12);
+    color: var(--ink-1);
+    line-height: 1.5;
+  }
+  .update-link {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--fs-12);
+    font-weight: 600;
+    color: var(--crayon-sky-ink);
+    background: var(--crayon-sky-soft);
+    padding: 5px 12px;
+    border-radius: 999px;
+    text-decoration: none;
   }
 </style>
