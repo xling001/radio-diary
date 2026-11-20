@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { exportBatchMarkdown, normalizeStats, pitchName } from '../../core/index.js';
   import { TakeStore, subscribeTakes } from '../../store/takes.js';
   import { SelfCheckStore, subscribeSelfChecks } from '../../store/selfCheck.js';
@@ -16,7 +16,7 @@
   let takes = $state([]);
   let loading = $state(true);
   let filterFav = $state(false);
-  let trendMetric = $state('pitch'); // 'pitch' | 'weight'
+  let trendMetric = $state('pitch'); // 'pitch' | 'weight' | 'heatmap'
   let batchMode = $state(false);
   let selectedIds = $state(new Set());
   let groupOpenMap = $state(loadOpenMap());
@@ -57,8 +57,11 @@
   }
 
   function drawCharts() {
-    if (heatmapCanvas) paintHeatmap(heatmapCanvas, takes);
-    if (trendCanvas) paintTrendChart(trendCanvas, takes, trendMetric, settings.floorTargetHz);
+    if (trendMetric === 'heatmap') {
+      if (heatmapCanvas) paintHeatmap(heatmapCanvas, takes);
+    } else if (trendCanvas) {
+      paintTrendChart(trendCanvas, takes, trendMetric, settings.floorTargetHz);
+    }
   }
 
   onMount(() => {
@@ -87,8 +90,9 @@
 
   $effect(() => {
     const _m = trendMetric;
+    const _len = takes.length;
     const _f = settings.floorTargetHz;
-    requestAnimationFrame(drawCharts);
+    tick().then(() => requestAnimationFrame(drawCharts));
   });
 
   function showMsg(msg) {
@@ -275,6 +279,14 @@
           onclick={() => ui.navigate('history/selfcheck')}
           aria-label="进入每周主观自评"
         >
+          <span class="stat-bow" aria-hidden="true">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 12c-3-4-7.5-4.5-8.5-1.5S6.5 16 12 12z"></path>
+              <path d="M12 12c3-4 7.5-4.5 8.5-1.5S17.5 16 12 12z"></path>
+              <path d="M12 12l-2.5 6.5"></path>
+              <path d="M12 12l2.5 6.5"></path>
+            </svg>
+          </span>
           <span class="stat-entry-val">
             <span class="stat-entry-dot" aria-hidden="true"></span>
             <span>{isSelfCheckDone ? '已记 ✓' : '待记 ›'}</span>
@@ -283,31 +295,46 @@
         </button>
       </div>
 
-      <canvas bind:this={heatmapCanvas} class="heatmap-canvas"></canvas>
-
       <div class="trend-head">
-        <span class="trend-title">练习走势</span>
-        <div class="trend-tabs">
+        <div class="trend-tabs" role="tablist" aria-label="手账图表视图">
           <button
             type="button"
+            role="tab"
+            aria-selected={trendMetric === 'pitch'}
             class="trend-tab {trendMetric === 'pitch' ? 'active' : ''}"
-            onclick={() => { trendMetric = 'pitch'; requestAnimationFrame(drawCharts); }}
+            onclick={() => { trendMetric = 'pitch'; }}
           >
             <span class="trend-dot dot-sky" aria-hidden="true"></span>
             <span>音高 Hz</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={trendMetric === 'weight'}
             class="trend-tab {trendMetric === 'weight' ? 'active' : ''}"
-            onclick={() => { trendMetric = 'weight'; requestAnimationFrame(drawCharts); }}
+            onclick={() => { trendMetric = 'weight'; }}
           >
             <span class="trend-dot dot-amber" aria-hidden="true"></span>
-            <span>发声轻重 H1-H2</span>
+            <span>轻重 H1-H2</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={trendMetric === 'heatmap'}
+            class="trend-tab {trendMetric === 'heatmap' ? 'active' : ''}"
+            onclick={() => { trendMetric = 'heatmap'; }}
+          >
+            <span class="trend-dot dot-mint" aria-hidden="true"></span>
+            <span>练习脚印</span>
           </button>
         </div>
       </div>
 
-      <canvas bind:this={trendCanvas} class="trend-canvas"></canvas>
+      {#if trendMetric === 'heatmap'}
+        <canvas bind:this={heatmapCanvas} class="heatmap-canvas"></canvas>
+      {:else}
+        <canvas bind:this={trendCanvas} class="trend-canvas"></canvas>
+      {/if}
     </div>
   {/if}
 
@@ -339,7 +366,7 @@
           selectedIds = new Set();
         }}
       >
-        {batchMode ? '完成选择' : '多选对比'}
+        {batchMode ? '完成' : '导出与管理'}
       </button>
     </div>
 
@@ -478,12 +505,24 @@
     min-width: 0;
   }
   .stat-entry {
+    position: relative;
     cursor: pointer;
+    box-shadow: inset 0 1px 0 var(--seal-highlight);
     transition: transform 0.12s ease;
   }
   .stat-entry:active {
     transform: scale(0.97);
   }
+  .stat-bow {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    opacity: 0.72;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .stat-entry.is-pending .stat-bow { color: var(--crayon-lavender-ink); }
+  .stat-entry.is-done .stat-bow { color: var(--crayon-mint-ink); }
   .stat-entry.is-pending {
     background: var(--crayon-lavender-soft);
     border-color: var(--crayon-lavender);
@@ -556,25 +595,21 @@
 
   .heatmap-canvas {
     width: 100%;
-    height: 116px;
+    height: 136px;
     display: block;
-    margin-bottom: 12px;
   }
 
   .trend-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-bottom: 8px;
-  }
-  .trend-title {
-    font-size: var(--fs-13);
-    font-weight: 700;
-    color: var(--ink-1);
   }
   .trend-tabs {
     display: inline-flex;
+    flex-wrap: wrap;
     background: var(--paper-3);
+    border: 1px solid var(--hairline);
     padding: 3px;
     border-radius: 999px;
     gap: 2px;
@@ -591,6 +626,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    white-space: nowrap;
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   }
   .trend-tab.active {
@@ -611,10 +647,11 @@
   }
   .trend-dot.dot-sky { background: var(--crayon-sky); }
   .trend-dot.dot-amber { background: var(--crayon-amber); }
+  .trend-dot.dot-mint { background: var(--crayon-mint); }
 
   .trend-canvas {
     width: 100%;
-    height: 152px;
+    height: 144px;
     display: block;
   }
 

@@ -8,7 +8,7 @@
   import { confirmDlg } from '../../ui/dialog.js';
 
   const DUR_STEPS = [60, 90, 120, 180];
-  const APP_VERSION = '2.0.5';
+  const APP_VERSION = '2.0.6';
   const RELEASES_LATEST_URL = 'https://github.com/xling001/radio-diary/releases/latest';
   const RELEASES_API_URL = 'https://api.github.com/repos/xling001/radio-diary/releases/latest';
 
@@ -293,7 +293,7 @@
   </section>
 
   <div class="ver-foot">
-    电波日记 v2.0.5 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v2.0.6 · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 
@@ -353,6 +353,11 @@
   .set-row:last-child {
     border-bottom: none;
     padding-bottom: 0;
+  }
+
+  .set-row > div:first-child {
+    min-width: 0;
+    flex: 1;
   }
 
   .set-lbl {
@@ -415,9 +420,11 @@
     color: var(--ink-1);
     font-size: var(--fs-12);
     font-weight: 600;
-    padding: 6px 12px;
+    padding: 7px 14px;
     border-radius: 999px;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .danger-pill {
