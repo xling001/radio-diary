@@ -12,6 +12,7 @@
 import { normalizeStats } from '../metrics/normalizeStats.js';
 import { pitchName, ALGO_VERSION } from './index.js';
 import { KB_VERSION } from '../metrics/kbNorms.js';
+import { SELF_CHECK_QUESTIONS } from '../store/selfCheck.js';
 
 /**
  * 格式化本地时间 YYYY-MM-DD HH:mm
@@ -260,12 +261,12 @@ ${detailsSections}
  * @param {string} fileName 保存文件名 (如 电波日记_20261114_1720_声音日记.md)
  * @returns {Promise<{ shared: boolean, downloaded: boolean, path?: string, fileName: string }>}
  */
-export async function saveMarkdownFile(content, fileName) {
-  // UTF-8 BOM 确保 Windows 记事本、Typora、手机阅读器打开绝不乱码
-  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+export async function saveTextFile(content, fileName, mimeType = 'text/markdown') {
+  const isMd = mimeType.includes('markdown') || mimeType.includes('text');
   const encoder = new TextEncoder();
   const textBytes = encoder.encode(content);
-  const blob = new Blob([bom, textBytes], { type: 'text/markdown;charset=utf-8' });
+  const parts = isMd ? [new Uint8Array([0xEF, 0xBB, 0xBF]), textBytes] : [textBytes];
+  const blob = new Blob(parts, { type: `${mimeType};charset=utf-8` });
 
   // 1. Android 原生宿主环境优先（window.DshFile 存在说明在 Android App 内）
   if (typeof window !== 'undefined' && window.DshFile) {
@@ -284,7 +285,7 @@ export async function saveMarkdownFile(content, fileName) {
 
       let resPath = null;
       if (typeof window.DshFile.saveFile === 'function') {
-        resPath = window.DshFile.saveFile(fileName, b64, 'text/markdown');
+        resPath = window.DshFile.saveFile(fileName, b64, mimeType);
       } else if (typeof window.DshFile.saveBase64 === 'function') {
         resPath = window.DshFile.saveBase64(fileName, b64);
       }
@@ -292,19 +293,19 @@ export async function saveMarkdownFile(content, fileName) {
         return { shared: true, downloaded: true, path: resPath, fileName };
       }
     } catch (e) {
-      console.warn('[export] 原生 DshFile 保存 markdown 失败，尝试降级:', e);
+      console.warn('[export] 原生 DshFile 保存文件失败，尝试降级:', e);
     }
   }
 
   // 2. 外部浏览器环境：尝试 Web Share API
   if (typeof navigator !== 'undefined' && navigator.canShare && window.File) {
     try {
-      const file = new File([blob], fileName, { type: 'text/markdown;charset=utf-8' });
+      const file = new File([blob], fileName, { type: `${mimeType};charset=utf-8` });
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: fileName,
-          text: '电波日记发声测量记录',
+          text: '电波日记数据备份与记录',
         });
         return { shared: true, downloaded: false, fileName };
       }
@@ -323,6 +324,57 @@ export async function saveMarkdownFile(content, fileName) {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   return { shared: false, downloaded: true, fileName };
+}
+
+export async function saveMarkdownFile(content, fileName) {
+  return saveTextFile(content, fileName, 'text/markdown');
+}
+
+export async function exportSelfChecksMarkdown(entries = []) {
+  if (!entries.length) throw new Error('还没有可导出的主观自评记录。');
+  const dateStr = formatFileStamp(Date.now());
+  const fileName = `电波日记_${dateStr}_每周主观自评汇总(${entries.length}次).md`;
+  const blocks = entries.map((sc, i) => {
+    const qaLines = [];
+    for (const q of SELF_CHECK_QUESTIONS) {
+      const ans = sc.answers?.[q.key];
+      if (ans) qaLines.push(`- **${q.title}**：${ans}`);
+    }
+    if (!qaLines.length && sc.legacyScores) {
+      qaLines.push(`- **主观感受刻度**：舒适 ${sc.legacyScores.comfort}/5 · 专注 ${sc.legacyScores.focus}/5 · 自在 ${sc.legacyScores.ease}/5`);
+    }
+    if (sc.contexts?.length) {
+      qaLines.push(`- **本周用声与练习场合**：${sc.contexts.join('、')}`);
+    }
+    if (sc.note) {
+      qaLines.push(`- **本周小记**：${sc.note}`);
+    }
+    return `### ${i + 1}. ${formatLocalTime(sc.ts)} · ${sc.mood || '😌 平稳'}\n\n${qaLines.join('\n') || '- 无补充条目'}`;
+  }).join('\n\n---\n\n');
+
+  const md = `# 🌸 电波日记 · 每周主观自评汇总
+
+- 导出时间：${formatLocalTime(Date.now())}
+- 累计次数：${entries.length} 次
+- 记录原则：不计分、不打等级，仅关注日常舒适度、社交自在感与自我接纳。
+
+---
+
+${blocks}
+`;
+  return saveTextFile(md, fileName, 'text/markdown');
+}
+
+export async function exportDiaryBackupJson({ selfChecks = [], takes = [] } = {}) {
+  const dateStr = formatFileStamp(Date.now());
+  const fileName = `电波日记_${dateStr}_手账备份.json`;
+  const payload = {
+    schema: 'radiodiary-backup-v1',
+    exportedAt: new Date().toISOString(),
+    selfChecks,
+    takesSummary: (takes || []).map((t) => toExport(t)).filter(Boolean),
+  };
+  return saveTextFile(JSON.stringify(payload, null, 2), fileName, 'application/json');
 }
 
 /**

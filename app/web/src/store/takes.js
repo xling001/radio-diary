@@ -6,45 +6,11 @@
    =========================================================== */
 
 import { cleanPitchTrack } from '../dsp/pitch.js';
+import { txStore } from './db.js';
 
-const DB_NAME = 'transvoice';
-const DB_VERSION = 1;
 const STORE = 'takes';
 
-let dbPromise = null;
-
-function openDB() {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const os = db.createObjectStore(STORE, { keyPath: 'id' });
-        os.createIndex('ts', 'ts');
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-  return dbPromise;
-}
-
-function tx(mode, fn) {
-  return openDB().then((db) => new Promise((resolve, reject) => {
-    const t = db.transaction(STORE, mode);
-    const os = t.objectStore(STORE);
-    let out;
-    try {
-      out = fn(os);
-    } catch (e) {
-      reject(e);
-      return;
-    }
-    t.oncomplete = () => resolve(out && out.result !== undefined ? out.result : out);
-    t.onerror = () => reject(t.error);
-  }));
-}
+const tx = (mode, fn) => txStore(STORE, mode, fn);
 
 const listeners = new Set();
 

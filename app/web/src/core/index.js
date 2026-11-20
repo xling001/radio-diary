@@ -58,6 +58,8 @@ import {
   saveMarkdownFile,
   exportTakeMarkdown,
   exportBatchMarkdown,
+  exportSelfChecksMarkdown,
+  exportDiaryBackupJson,
 } from './export.js';
 
 export {
@@ -95,6 +97,8 @@ export {
   saveMarkdownFile,
   exportTakeMarkdown,
   exportBatchMarkdown,
+  exportSelfChecksMarkdown,
+  exportDiaryBackupJson,
 };
 
 /**

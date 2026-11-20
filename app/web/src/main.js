@@ -94,10 +94,10 @@ export function applyTheme(theme, persist = true) {
 
 let greetingIdx = Math.floor(Math.random() * GREETINGS.length);
 
-function renderGreeting(view) {
+function renderGreeting(view, sub = null) {
   const bar = $('page-greeting');
   if (!bar) return;
-  const show = view === 'record' || view === 'mindset';
+  const show = (view === 'record' || view === 'mindset') && !sub;
   bar.hidden = !show;
   if (!show) return;
   const [kaomoji, text] = GREETINGS[greetingIdx % GREETINGS.length];
@@ -107,12 +107,16 @@ function renderGreeting(view) {
   if (tEl) tEl.textContent = text;
 }
 
-function syncViewChrome(view) {
-  const [title, sub] = VIEW_TITLES[view] || VIEW_TITLES.record;
+function syncViewChrome(view, sub = null) {
+  let [title, subTitle] = VIEW_TITLES[view] || VIEW_TITLES.record;
+  if (view === 'history' && sub === 'selfcheck') {
+    title = '每周自评';
+    subTitle = '状态觉察 · 百字周记 · 本地备份';
+  }
   const tEl = $('page-title');
   const sEl = $('page-sub');
   if (tEl) tEl.textContent = title;
-  if (sEl) sEl.textContent = sub;
+  if (sEl) sEl.textContent = subTitle;
 
   document.querySelectorAll('.view[data-view]').forEach((sec) => {
     sec.classList.toggle('active', sec.dataset.view === view);
@@ -122,7 +126,7 @@ function syncViewChrome(view) {
     btn.classList.toggle('active', btn.dataset.go === view);
   });
 
-  renderGreeting(view);
+  renderGreeting(view, sub);
 }
 
 /** 保持核芯分析一致性导出 */
@@ -151,7 +155,7 @@ function bindGlobalChrome() {
   if (greetingBar) {
     const cycle = () => {
       greetingIdx = (greetingIdx + 1) % GREETINGS.length;
-      renderGreeting(ui.currentView);
+      renderGreeting(ui.currentView, ui.subRoute);
     };
     greetingBar.addEventListener('click', cycle);
     greetingBar.addEventListener('keydown', (e) => {
@@ -170,7 +174,7 @@ function bindGlobalChrome() {
   });
 
   ui.subscribe((route) => {
-    syncViewChrome(route.view);
+    syncViewChrome(route.view, route.sub);
   });
 
   if (typeof window !== 'undefined') {

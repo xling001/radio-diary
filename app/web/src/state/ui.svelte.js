@@ -144,9 +144,9 @@ class UIState {
       return true;
     }
 
-    // 3. 心法教程：若处于篇章阅读状态，退回教程目录
-    if (this.currentView === 'mindset' && this.subRoute) {
-      this.navigate('mindset');
+    // 3. 心法教程 / 手账二级页：若处于二级子路由，退回主目录
+    if ((this.currentView === 'mindset' || this.currentView === 'history') && this.subRoute) {
+      this.navigate(this.currentView);
       return true;
     }
 
