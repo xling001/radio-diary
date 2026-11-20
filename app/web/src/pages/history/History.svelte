@@ -422,7 +422,7 @@
                 {@const seal = t.stamp?.mood ? parseMoodSeal(t.stamp) : null}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <div
-                  class="take-item {checked ? 'is-selected' : ''}"
+                  class="take-item {checked ? 'is-selected' : ''} {seal ? `has-seal seal-${seal.tone}` : ''}"
                   role="button"
                   tabindex="0"
                   onclick={() => openTakeAnalysis(t)}
@@ -786,8 +786,21 @@
     border-radius: var(--radius-md);
     padding: 11px 12px;
     border: 1px solid var(--hairline);
+    box-shadow: inset 0 1px 0 var(--seal-highlight);
     cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.15s ease;
   }
+  .take-item:active {
+    transform: scale(0.99);
+  }
+  .take-item.has-seal {
+    border-left-width: 3px;
+  }
+  .take-item.seal-mint     { border-left-color: var(--crayon-mint); }
+  .take-item.seal-coral    { border-left-color: var(--crayon-coral); }
+  .take-item.seal-sky      { border-left-color: var(--crayon-sky); }
+  .take-item.seal-lavender { border-left-color: var(--crayon-lavender); }
+  .take-item.seal-indigo   { border-left-color: var(--crayon-indigo); }
   .take-item.is-selected {
     border-color: var(--crayon-sky);
     background: var(--crayon-sky-soft);

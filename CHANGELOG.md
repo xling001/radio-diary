@@ -4,6 +4,17 @@
 
 ---
 
+## [2.1.0] - 2026-11-21
+
+iOS 兼容网页版（PWA）、老设备图形兼容修复与前端细节打磨：
+
+- **推出兼容 iOS 与全平台的在线网页版（PWA）**：新增 `manifest.json` 与 iOS Safari `apple-mobile-web-app` 元标签支持，在 Safari 点击「添加到主屏幕」即可独立窗口使用；同步上线 GitHub Pages 在线体验版（纯浏览器端计算，绝不上传音频）。
+- **老版本 Android WebView 与 iOS Safari 兼容修复**：
+  - 修复 iOS Safari `AudioContext` 异步授权后可能被挂起静音的问题：改在点击录音的同步手势栈中提前初始化并唤醒 `AudioContext`。
+  - 新增 `CanvasRenderingContext2D.prototype.roundRect` 兼容补丁，消除未升级系统 WebView（< 99）与 iOS < 15.4 设备的画布白屏异常。
+  - 为 `Analysis.svelte` 与 `MoodStampModal.svelte` 中的 `color-mix()` 边框补充 `var(--border-soft)` / `var(--crayon-lavender)` 兜底；调整 Vite 编译目标至 `['es2020', 'chrome80', 'safari14']`。
+- **克制前端打磨**：为「手账」页带心情印章的记录卡增添细腻左侧印鉴色条，为「指南」长文章阅读页新增下滚后浮现的「↑ 顶部」返回胶囊。
+
 ## [2.0.6] - 2026-11-21
 
 手账布局减负与设置页按钮对齐打磨：

@@ -173,6 +173,7 @@
     gap: 12px;
     padding: 11px 13px;
     border-radius: var(--radius-md);
+    border: 1px solid var(--border-soft);
     border: 1px solid color-mix(in srgb, var(--seal-tone) 34%, transparent);
     background: linear-gradient(135deg, var(--paper-card) 0%, var(--seal-tone-soft) 100%);
     box-shadow: inset 0 1px 0 var(--seal-highlight), var(--seal-shadow);
@@ -189,6 +190,7 @@
     height: 42px;
     border-radius: 50%;
     background: var(--seal-tone-soft);
+    border: 1px solid var(--border-soft);
     border: 1px solid color-mix(in srgb, var(--seal-tone) 32%, transparent);
     display: inline-flex;
     align-items: center;

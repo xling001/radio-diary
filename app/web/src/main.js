@@ -6,6 +6,28 @@ import { extractAudioFrames, normalizeStats, summarize } from './core/index.js';
 import { ui } from './state/ui.svelte.js';
 import { settings } from './state/settings.svelte.js';
 
+// CanvasRenderingContext2D.roundRect 兼容补丁（救 Android WebView < 99 与 iOS Safari < 15.4）
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, radii = 0) {
+    const r = Array.isArray(radii)
+      ? [radii[0] || 0, radii[1] ?? radii[0] ?? 0, radii[2] ?? radii[0] ?? 0, radii[3] ?? radii[1] ?? radii[0] ?? 0]
+      : [radii || 0, radii || 0, radii || 0, radii || 0];
+    const maxR = Math.max(0, Math.min(Math.abs(w) / 2, Math.abs(h) / 2));
+    const [tl, tr, br, bl] = r.map((v) => Math.max(0, Math.min(Number(v) || 0, maxR)));
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + tr);
+    this.lineTo(x + w, y + h - br);
+    this.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+    this.lineTo(x + bl, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - bl);
+    this.lineTo(x, y + tl);
+    this.quadraticCurveTo(x, y, x + tl, y);
+    this.closePath();
+    return this;
+  };
+}
+
 export const BASELINE_STEPS = [150, 155, 160, 165];
 
 const GREETINGS = [

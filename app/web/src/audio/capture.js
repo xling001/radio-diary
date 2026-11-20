@@ -57,6 +57,19 @@ export class MicCapture {
     const support = micSupportCheck();
     if (!support.ok) throw new MicUnavailable(support.reason, support.message);
 
+    // iOS Safari 要求 AudioContext 在点击手势同步栈里初始化并唤醒，不能等 getUserMedia resolve 之后
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx && !this.ctx) {
+      try {
+        this.ctx = new AudioCtx();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      } catch {
+        this.ctx = null;
+      }
+    }
+
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -68,6 +81,7 @@ export class MicCapture {
         },
       });
     } catch (e) {
+      await this.close();
       const name = e?.name || '';
       if (name === 'NotAllowedError' || name === 'SecurityError') {
         throw new MicUnavailable('denied', '麦克风被拒绝了。在地址栏的权限里允许一次。');
@@ -86,8 +100,8 @@ export class MicCapture {
       const track = stream.getAudioTracks && stream.getAudioTracks()[0];
       this.deviceLabel = (track && track.label) || '';
     } catch { this.deviceLabel = ''; }
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
+    if (!this.ctx && AudioCtx) this.ctx = new AudioCtx();
+    if (this.ctx && this.ctx.state === 'suspended') await this.ctx.resume();
 
     const src = this.ctx.createMediaStreamSource(stream);
     this.src = src;

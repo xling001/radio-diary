@@ -8,7 +8,7 @@
   import { confirmDlg } from '../../ui/dialog.js';
 
   const DUR_STEPS = [60, 90, 120, 180];
-  const APP_VERSION = '2.0.6';
+  const APP_VERSION = '2.1.0';
   const RELEASES_LATEST_URL = 'https://github.com/xling001/radio-diary/releases/latest';
   const RELEASES_API_URL = 'https://api.github.com/repos/xling001/radio-diary/releases/latest';
 
@@ -293,7 +293,7 @@
   </section>
 
   <div class="ver-foot">
-    电波日记 v2.0.6 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v2.1.0 · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 

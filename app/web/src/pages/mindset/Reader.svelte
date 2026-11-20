@@ -1,8 +1,23 @@
 <script>
+  import { onMount } from 'svelte';
   import { GUIDE_CHAPTERS } from './mindsetData.js';
   import { ui } from '../../state/ui.svelte.js';
 
   let { chapterId = '' } = $props();
+  let showTopBtn = $state(false);
+
+  onMount(() => {
+    const onScroll = () => {
+      showTopBtn = (window.scrollY || 0) > 360;
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  });
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   const chapterIdx = $derived.by(() => {
     const idx = GUIDE_CHAPTERS.findIndex((c) => c.id === chapterId);
@@ -169,6 +184,12 @@
       </button>
     {/if}
   </div>
+
+  {#if showTopBtn}
+    <button type="button" class="float-top-btn" onclick={scrollToTop} aria-label="回到本节顶部">
+      ↑ 顶部
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -440,5 +461,21 @@
   .pager-name {
     font-size: var(--fs-11);
     color: var(--ink-3);
+  }
+
+  .float-top-btn {
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--nav-h) + 20px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+    border: 1px solid var(--border-soft);
+    background: var(--paper-card);
+    color: var(--ink-1);
+    font-size: var(--fs-12);
+    font-weight: 600;
+    padding: 7px 13px;
+    border-radius: 999px;
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
   }
 </style>
