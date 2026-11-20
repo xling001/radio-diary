@@ -50,18 +50,6 @@ export function pitchName(hz) {
   return `${name}${octave}`;
 }
 
-import {
-  toExport,
-  renderDiaryMarkdown,
-  renderConsultationMarkdown,
-  renderBatchMarkdown,
-  saveMarkdownFile,
-  exportTakeMarkdown,
-  exportBatchMarkdown,
-  exportSelfChecksMarkdown,
-  exportDiaryBackupJson,
-} from './export.js';
-
 export {
   extractAudioFrames,
   cleanPitchTrack,
@@ -90,15 +78,6 @@ export {
   evaluateSpan,
   evaluateSibilance,
   kbNorms,
-  toExport,
-  renderDiaryMarkdown,
-  renderConsultationMarkdown,
-  renderBatchMarkdown,
-  saveMarkdownFile,
-  exportTakeMarkdown,
-  exportBatchMarkdown,
-  exportSelfChecksMarkdown,
-  exportDiaryBackupJson,
 };
 
 /**

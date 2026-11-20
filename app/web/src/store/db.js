@@ -26,7 +26,21 @@ export function openAppDB() {
         scOs.createIndex('ts', 'ts');
       }
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onblocked = () => {
+      dbPromise = null;
+      reject(new Error('本地数据库正在升级，请先关闭本应用的其它页面后重试'));
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => {
+        try { db.close(); } catch {}
+        dbPromise = null;
+      };
+      db.onclose = () => {
+        dbPromise = null;
+      };
+      resolve(db);
+    };
     req.onerror = () => {
       dbPromise = null;
       reject(req.error);
@@ -35,18 +49,32 @@ export function openAppDB() {
   return dbPromise;
 }
 
-export function txStore(storeName, mode, fn) {
+export function txStore(storeName, mode, fn, retried = false) {
   return openAppDB().then((db) => new Promise((resolve, reject) => {
-    const t = db.transaction(storeName, mode);
-    const os = t.objectStore(storeName);
+    let t;
     let out;
     try {
+      t = db.transaction(storeName, mode);
+      const os = t.objectStore(storeName);
       out = fn(os);
     } catch (e) {
+      if (!retried && e?.name === 'InvalidStateError') {
+        dbPromise = null;
+        txStore(storeName, mode, fn, true).then(resolve, reject);
+        return;
+      }
       reject(e);
       return;
     }
     t.oncomplete = () => resolve(out && out.result !== undefined ? out.result : out);
-    t.onerror = () => reject(t.error);
+    t.onerror = () => {
+      if (!retried && t.error?.name === 'InvalidStateError') {
+        dbPromise = null;
+        txStore(storeName, mode, fn, true).then(resolve, reject);
+        return;
+      }
+      reject(t.error);
+    };
+    t.onabort = () => reject(t.error || new Error('IndexedDB transaction aborted'));
   }));
 }

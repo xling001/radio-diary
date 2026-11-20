@@ -9,8 +9,8 @@
     evaluateShimmer,
     evaluateSibilance,
     pitchName,
-    exportTakeMarkdown,
   } from '../../core/index.js';
+  import { exportTakeMarkdown } from '../../core/export.js';
   import { TakeStore, subscribeTakes } from '../../store/takes.js';
   import { ui } from '../../state/ui.svelte.js';
   import { settings } from '../../state/settings.svelte.js';
@@ -468,12 +468,16 @@
   });
 
   const vocalFoldCard = $derived.by(() => {
-    if (!ns) return { pitchTag: '—', pitchTone: 'sky', h12Val: '—', h12Tag: '待测', hnrVal: '—', hnrTag: '待测', jitVal: '—', jitTag: '待测', halvVal: '—', halvTag: '待测' };
+    if (!ns) return { pitchTag: '—', pitchTone: 'sky', lowConf: false, h12GuardNote: '', h12Val: '—', h12Tag: '待测', hnrVal: '—', hnrTag: '待测', jitVal: '—', jitTag: '待测', halvVal: '—', halvTag: '待测' };
+    const lowConf = take?.ok === false;
     const f0 = ns.medianF0;
     let pitchTag = isCheckSOnly ? '清擦音无基频' : '基频待测';
     let pitchTone = 'sky';
     if (f0) {
-      if (f0 >= 175) {
+      if (lowConf) {
+        pitchTag = '样本受限 · 仅供参考';
+        pitchTone = 'amber';
+      } else if (f0 >= 175) {
         pitchTag = ns.bottleneckHint ? '音高较高 · 音色偏厚' : '高音区 (女声常见)';
         pitchTone = ns.bottleneckHint ? 'lavender' : 'mint';
       } else if (f0 >= 145) {
@@ -486,15 +490,27 @@
     }
 
     const hEv = evaluateH1H2(ns.h1h2);
+    const hasFormantConflict = ns.h1h2 == null && !ns.quadrant?.isHum && (ns.h1h2GuardActive || ns.h1h2SkipPct > 0);
     const h12Val = ns.h1h2 != null
       ? `${fmtSigned(ns.h1h2, 1, ' dB')}`
-      : (ns.quadrant?.isHum ? '不适用' : (ns.h1h2SkipPct > 0 ? '已避让保护' : '未测出'));
+      : (ns.quadrant?.isHum ? '不适用' : (hasFormantConflict ? '已避让保护' : '未测出'));
     const h12Tag = ns.h1h2 != null
-      ? (ns.h1h2Recovered ? `${hEv.chip || '谐波推算'} (推算)` : (ns.spectralStatus || hEv.chip || '已测'))
-      : (ns.quadrant?.isHum ? '闭口哼鸣' : (ns.h1h2SkipPct > 0 ? `${ns.h1h2SkipPct}% 帧 2f0 贴 F1` : '有效浊音不足'));
+      ? (lowConf
+        ? '仅供参考（样本受限）'
+        : (ns.h1h2Recovered ? `${hEv.chip || '谐波推算'} (推算)` : (ns.spectralStatus || hEv.chip || '已测')))
+      : (ns.quadrant?.isHum
+        ? '闭口哼鸣'
+        : (hasFormantConflict ? 'F1 贴近二倍频，干净帧不足' : '有效浊音不足'));
+
+    const hasDfAlongside = (ns.deltaF != null || ns.effDeltaF != null);
+    const h12GuardNote = (hasFormantConflict && hasDfAlongside)
+      ? '说明：音高与共鸣 ΔF 可用所有稳定帧计算，而 H1-H2 需要避开 F1 靠近二倍频的片段；这段里避让后干净帧不足 3 帧，因此单独留空以防失真，不代表两张卡矛盾～'
+      : '';
 
     const hnrVal = ns.hnr != null ? `${ns.hnr.toFixed(1)} dB` : '—';
-    const hnrTag = ns.hnr != null ? (ns.hnr >= 15 ? '较清澈' : (ns.hnr >= 11 ? '平稳带柔气' : '略带气声')) : '待浊音样本';
+    const hnrTag = ns.hnr != null
+      ? (lowConf ? '仅供参考（受限样本）' : (ns.hnr >= 15 ? '较清澈' : (ns.hnr >= 11 ? '平稳带柔气' : '略带气声')))
+      : '待浊音样本';
 
     const jEv = evaluateJitter(ns.jitter);
     const sEv = evaluateShimmer(ns.shimmer);
@@ -502,12 +518,16 @@
     const jitVal = (ns.jitter != null || ns.shimmer != null)
       ? `${ns.jitter != null ? ns.jitter.toFixed(2) + '%' : '—'} / ${ns.shimmer != null ? ns.shimmer.toFixed(1) + '%' : '—'}`
       : '—';
-    const jitTag = (ns.jitter != null || ns.shimmer != null) ? (stableJit ? '振动较稳' : '略有起伏') : '待测';
+    const jitTag = (ns.jitter != null || ns.shimmer != null)
+      ? (lowConf ? '仅供参考' : (stableJit ? '振动较稳' : '略有起伏'))
+      : '待测';
 
     const halvVal = ns.pitchHalving != null ? `${ns.pitchHalving}%` : '—';
-    const halvTag = ns.pitchHalving != null ? (ns.pitchHalving >= 12 ? '偶有挤卡/假声感' : '较顺畅') : '待测';
+    const halvTag = ns.pitchHalving != null
+      ? (lowConf ? '仅供参考' : (ns.pitchHalving >= 12 ? '偶有挤卡/假声感' : '较顺畅'))
+      : '待测';
 
-    return { pitchTag, pitchTone, h12Val, h12Tag, hnrVal, hnrTag, jitVal, jitTag, halvVal, halvTag };
+    return { pitchTag, pitchTone, lowConf, h12GuardNote, h12Val, h12Tag, hnrVal, hnrTag, jitVal, jitTag, halvVal, halvTag };
   });
 </script>
 
@@ -635,9 +655,17 @@
       ></audio>
     {/if}
 
-    {#if !take.ok && take.reasons?.length}
+    {#if take.restoredSummary && !audioUrl}
       <div class="gentle-warn" role="status">
-        这次录音的提醒：{take.reasons.join('；')}
+        这是一条从手账备份恢复的文字与统计记录，未包含原始录音音频，数值与图表仍可正常回看。
+      </div>
+    {/if}
+
+    {#if !take.ok}
+      <div class="gentle-warn" role="status">
+        {take.reasons?.length
+          ? `本次录音条件受限（${take.reasons.join('；')}），以下声学数值仅作温和参考，建议重新录一段 3~6 秒清晰平稳的声音对比更准。`
+          : '本次录音条件受限，以下声学数值仅作参考。'}
       </div>
     {/if}
 
@@ -649,7 +677,7 @@
       </div>
 
       <div class="pv-pitch-hero">
-        <div class="pv-main-val tnum">
+        <div class="pv-main-val tnum {vocalFoldCard.lowConf ? 'vf-muted' : ''}">
           {#if isCheckSOnly}
             <span class="pv-hz">清擦音专项</span>
             <span class="pv-note">不计基频</span>
@@ -691,7 +719,7 @@
         </div>
       {/if}
 
-      <div class="vf-grid">
+      <div class="vf-grid {vocalFoldCard.lowConf ? 'vf-muted' : ''}">
         <div class="vf-cell">
           <span class="vf-lbl">发声轻重 (H1-H2)</span>
           <strong class="vf-val tnum">{vocalFoldCard.h12Val}</strong>
@@ -707,12 +735,16 @@
           <strong class="vf-val tnum">{vocalFoldCard.jitVal}</strong>
           <span class="vf-sub">{vocalFoldCard.jitTag}</span>
         </div>
-        <div class="vf-cell {ns.pitchHalving != null && ns.pitchHalving >= 12 ? 'vf-hint' : ''}">
+        <div class="vf-cell {!vocalFoldCard.lowConf && ns.pitchHalving != null && ns.pitchHalving >= 12 ? 'vf-hint' : ''}">
           <span class="vf-lbl">假声 / 倍频占比</span>
           <strong class="vf-val tnum">{vocalFoldCard.halvVal}</strong>
           <span class="vf-sub">{vocalFoldCard.halvTag}</span>
         </div>
       </div>
+
+      {#if vocalFoldCard.h12GuardNote}
+        <p class="vf-guard-note" role="note">{vocalFoldCard.h12GuardNote}</p>
+      {/if}
 
       {#if subcardPitch.body}
         <p class="pv-foot-note">{subcardPitch.body}</p>
@@ -1353,6 +1385,23 @@
   }
   .vf-cell.vf-hint .vf-sub {
     color: var(--crayon-lavender-ink);
+  }
+  .vf-muted .vf-val,
+  .pv-main-val.vf-muted .pv-hz {
+    opacity: 0.72;
+  }
+  .vf-muted .vf-sub {
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  .vf-guard-note {
+    margin: 0;
+    padding: 8px 11px;
+    border-radius: var(--radius-xs);
+    background: var(--crayon-mint-soft);
+    color: var(--crayon-mint-ink);
+    font-size: var(--fs-11);
+    line-height: 1.5;
   }
   .pv-foot-note {
     margin: 0;

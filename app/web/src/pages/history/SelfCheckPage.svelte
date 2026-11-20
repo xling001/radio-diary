@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { exportSelfChecksMarkdown, exportDiaryBackupJson } from '../../core/index.js';
+  import { exportSelfChecksMarkdown, exportDiaryBackupJson } from '../../core/export.js';
   import {
     SelfCheckStore,
     SELF_MOODS,
@@ -15,7 +15,7 @@
 
   let entries = $state(SelfCheckStore.allCached());
   let loading = $state(true);
-  let formOpen = $state(!SelfCheckStore.isDoneThisWeek(SelfCheckStore.allCached()));
+  let formOpen = $state(false);
 
   let answers = $state({});
   let contexts = $state([]);
@@ -31,21 +31,18 @@
   );
   const showRedlineTip = $derived(answers.throatLoad === SELF_CHECK_QUESTIONS[0].redlineOption);
 
-  async function refreshList(adjustForm = false) {
+  async function refreshList() {
     loading = true;
     try {
       entries = await SelfCheckStore.all();
-      if (adjustForm) {
-        formOpen = !SelfCheckStore.isDoneThisWeek(entries);
-      }
     } finally {
       loading = false;
     }
   }
 
   onMount(() => {
-    refreshList(true);
-    const unsub = subscribeSelfChecks(() => refreshList(false));
+    refreshList();
+    const unsub = subscribeSelfChecks(() => refreshList());
     return unsub;
   });
 
@@ -145,16 +142,31 @@
     reader.onload = async () => {
       try {
         const parsed = JSON.parse(String(reader.result || '{}'));
-        const list = Array.isArray(parsed)
-          ? parsed
-          : (Array.isArray(parsed?.selfChecks) ? parsed.selfChecks : null);
-        if (!list) {
-          showMsg('未在文件里找到自评备份数据');
+        if (parsed && !Array.isArray(parsed) && typeof parsed === 'object' && parsed.schema && parsed.schema !== 'radiodiary-backup-v1') {
+          showMsg(`备份版本暂不兼容（${parsed.schema}）`);
           return;
         }
-        const res = await SelfCheckStore.mergeImported(list);
-        await refreshList(false);
-        showMsg(`已恢复导入 ${res.added} 条新自评（现有共 ${res.total} 条）`);
+        const scList = Array.isArray(parsed)
+          ? parsed
+          : (Array.isArray(parsed?.selfChecks) ? parsed.selfChecks : []);
+        const takesList = (!Array.isArray(parsed) && Array.isArray(parsed?.takesSummary))
+          ? parsed.takesSummary
+          : [];
+        if (!Array.isArray(parsed) && !Array.isArray(parsed?.selfChecks) && !Array.isArray(parsed?.takesSummary)) {
+          showMsg('未在文件里找到可用的手账备份数据');
+          return;
+        }
+        const scRes = scList.length ? await SelfCheckStore.mergeImported(scList) : { added: 0, total: entries.length };
+        const takeRes = takesList.length ? await TakeStore.mergeImportedSummaries(takesList) : { added: 0, total: 0 };
+        await refreshList();
+        const parts = [];
+        if (scRes.added > 0) parts.push(`${scRes.added} 条新自评`);
+        if (takeRes.added > 0) parts.push(`${takeRes.added} 条练习记录统计`);
+        if (parts.length > 0) {
+          showMsg(`已恢复导入 ${parts.join('、')}（现有自评 ${scRes.total} 条）`);
+        } else {
+          showMsg('备份里的记录均已存在，未重复导入');
+        }
       } catch {
         showMsg('备份文件格式不对，请确认是 .json 备份文件');
       }

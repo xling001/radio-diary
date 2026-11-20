@@ -86,6 +86,91 @@ export const TakeStore = {
   async count() {
     return tx('readonly', (os) => os.count());
   },
+
+  async mergeImportedSummaries(rawTakes = []) {
+    if (!Array.isArray(rawTakes) || !rawTakes.length) {
+      const total = await this.count();
+      return { added: 0, total };
+    }
+    const existing = await this.all();
+    const existingIds = new Set(existing.map((t) => String(t.id)));
+    const toInsert = [];
+
+    for (let i = 0; i < rawTakes.length; i++) {
+      const item = rawTakes[i];
+      if (!item || typeof item !== 'object') continue;
+      const ts = Number(item.ts) || Date.now();
+      const id = item.id != null ? String(item.id) : `imported_${ts}_${i}`;
+      if (existingIds.has(id)) continue;
+      existingIds.add(id);
+
+      const durationSec = Number(item.durationSec) || 0;
+      const numOrNull = (v) => (v != null && Number.isFinite(Number(v)) ? Number(v) : null);
+
+      toInsert.push(unwrap({
+        id,
+        ts,
+        mode: item.mode || 'free',
+        setId: item.setId ?? null,
+        setName: item.setName || '导入记录',
+        durationSec,
+        ok: item.ok !== false,
+        reasons: Array.isArray(item.reasons) ? item.reasons : [],
+        fav: Boolean(item.fav),
+        stamp: item.stamp ?? null,
+        algoVersion: item.algoVersion || '0.5.0',
+        restoredSummary: true,
+        blob: null,
+        stats: item.stats && typeof item.stats === 'object' ? item.stats : {
+          medianF0: numOrNull(item.medianF0),
+          p10: numOrNull(item.p10),
+          p90: numOrNull(item.p90),
+          spanSt: numOrNull(item.spanSt),
+          floorSafeRatio: numOrNull(item.floorSafeRatio),
+          floorTargetHz: numOrNull(item.floorTargetHz),
+          hnr: numOrNull(item.hnr),
+          balance: numOrNull(item.balance),
+          deltaF: numOrNull(item.deltaF),
+          lengthCm: numOrNull(item.lengthCm),
+          avgF1: numOrNull(item.avgF1),
+          avgF2: numOrNull(item.avgF2),
+          avgF3: numOrNull(item.avgF3),
+          jitter: numOrNull(item.jitter),
+          shimmer: numOrNull(item.shimmer),
+          pitchHalving: numOrNull(item.pitchHalving),
+          sibilanceCentroid: numOrNull(item.sibilanceCentroid),
+          ext: {
+            totalSec: durationSec,
+            voicedSec: Number(item.voicedSec) || 0,
+            jitterPct: numOrNull(item.jitter),
+            shimmerPct: numOrNull(item.shimmer),
+            pitchHalvingPct: numOrNull(item.pitchHalving),
+            sibilanceCentroidHz: numOrNull(item.sibilanceCentroid),
+            floorTargetHz: numOrNull(item.floorTargetHz),
+          },
+          voiceQuality: {
+            h1h2Db: numOrNull(item.h1h2),
+            hnrDb: numOrNull(item.hnr),
+          },
+          spectral: {
+            h1h2Db: numOrNull(item.h1h2),
+          },
+          formants: {
+            deltaF: numOrNull(item.deltaF),
+            lengthCm: numOrNull(item.lengthCm),
+          },
+        },
+      }));
+    }
+
+    if (toInsert.length > 0) {
+      await tx('readwrite', (os) => {
+        for (const rec of toInsert) os.put(rec);
+      });
+      notifyChange('put', toInsert[0]);
+    }
+    return { added: toInsert.length, total: existing.length + toInsert.length };
+  },
 };
 
 /** 把逐帧曲线压成够画图的稀疏点（长录音保留至多 800 点），存进记录里，带时间戳与嘎裂标记 */

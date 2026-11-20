@@ -1,6 +1,7 @@
 <script>
   import { onMount, tick } from 'svelte';
-  import { exportBatchMarkdown, normalizeStats, pitchName } from '../../core/index.js';
+  import { normalizeStats, pitchName } from '../../core/index.js';
+  import { exportBatchMarkdown } from '../../core/export.js';
   import { TakeStore, subscribeTakes } from '../../store/takes.js';
   import { SelfCheckStore, subscribeSelfChecks } from '../../store/selfCheck.js';
   import { ui } from '../../state/ui.svelte.js';
@@ -16,7 +17,7 @@
   let takes = $state([]);
   let loading = $state(true);
   let filterFav = $state(false);
-  let trendMetric = $state('pitch'); // 'pitch' | 'weight' | 'heatmap'
+  let trendMetric = $state('heatmap'); // 'heatmap' | 'pitch' | 'weight'
   let batchMode = $state(false);
   let selectedIds = $state(new Set());
   let groupOpenMap = $state(loadOpenMap());
@@ -300,6 +301,16 @@
           <button
             type="button"
             role="tab"
+            aria-selected={trendMetric === 'heatmap'}
+            class="trend-tab {trendMetric === 'heatmap' ? 'active' : ''}"
+            onclick={() => { trendMetric = 'heatmap'; }}
+          >
+            <span class="trend-dot dot-mint" aria-hidden="true"></span>
+            <span>练习脚印</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={trendMetric === 'pitch'}
             class="trend-tab {trendMetric === 'pitch' ? 'active' : ''}"
             onclick={() => { trendMetric = 'pitch'; }}
@@ -316,16 +327,6 @@
           >
             <span class="trend-dot dot-amber" aria-hidden="true"></span>
             <span>轻重 H1-H2</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={trendMetric === 'heatmap'}
-            class="trend-tab {trendMetric === 'heatmap' ? 'active' : ''}"
-            onclick={() => { trendMetric = 'heatmap'; }}
-          >
-            <span class="trend-dot dot-mint" aria-hidden="true"></span>
-            <span>练习脚印</span>
           </button>
         </div>
       </div>
@@ -507,8 +508,10 @@
   .stat-entry {
     position: relative;
     cursor: pointer;
-    box-shadow: inset 0 1px 0 var(--seal-highlight);
-    transition: transform 0.12s ease;
+    background: linear-gradient(160deg, var(--paper-card) 0%, var(--paper-3) 100%);
+    border: 1px solid var(--border-soft);
+    box-shadow: inset 0 1.5px 0 var(--sheet-highlight), var(--shadow);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
   .stat-entry:active {
     transform: scale(0.97);
@@ -521,15 +524,17 @@
     line-height: 1;
     pointer-events: none;
   }
-  .stat-entry.is-pending .stat-bow { color: var(--crayon-lavender-ink); }
+  .stat-entry.is-pending .stat-bow { color: var(--crayon-coral); }
   .stat-entry.is-done .stat-bow { color: var(--crayon-mint-ink); }
   .stat-entry.is-pending {
-    background: var(--crayon-lavender-soft);
-    border-color: var(--crayon-lavender);
+    background: linear-gradient(160deg, var(--paper-card) 0%, var(--crayon-coral-soft) 100%);
+    border-color: var(--border-soft);
+    border-top: 2px solid var(--crayon-coral);
   }
   .stat-entry.is-done {
-    background: var(--crayon-mint-soft);
-    border-color: var(--crayon-mint);
+    background: linear-gradient(160deg, var(--paper-card) 0%, var(--crayon-mint-soft) 100%);
+    border-color: var(--border-soft);
+    border-top: 2px solid var(--crayon-mint);
   }
   .stat-entry-val {
     display: inline-flex;
@@ -541,7 +546,7 @@
     line-height: 1.3;
   }
   .stat-entry.is-pending .stat-entry-val {
-    color: var(--crayon-lavender-ink);
+    color: var(--crayon-coral-ink);
   }
   .stat-entry.is-done .stat-entry-val {
     color: var(--crayon-mint-ink);
@@ -572,11 +577,13 @@
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
+    box-shadow: inset 0 1px 0 var(--sheet-highlight), var(--shadow);
   }
   .empty-self-entry.is-pending {
-    background: var(--crayon-lavender-soft);
-    color: var(--crayon-lavender-ink);
-    border-color: var(--crayon-lavender);
+    background: linear-gradient(160deg, var(--paper-card) 0%, var(--crayon-coral-soft) 100%);
+    color: var(--crayon-coral-ink);
+    border-color: var(--border-soft);
+    border-top: 2px solid var(--crayon-coral);
   }
   .empty-self-entry.is-done {
     background: var(--crayon-mint-soft);

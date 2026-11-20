@@ -12,7 +12,7 @@
 import { normalizeStats } from '../metrics/normalizeStats.js';
 import { pitchName, ALGO_VERSION } from './index.js';
 import { KB_VERSION } from '../metrics/kbNorms.js';
-import { SELF_CHECK_QUESTIONS } from '../store/selfCheck.js';
+import { SELF_CHECK_QUESTIONS } from './selfCheckSchema.js';
 
 /**
  * 格式化本地时间 YYYY-MM-DD HH:mm

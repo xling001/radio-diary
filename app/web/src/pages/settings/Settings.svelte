@@ -8,7 +8,7 @@
   import { confirmDlg } from '../../ui/dialog.js';
 
   const DUR_STEPS = [60, 90, 120, 180];
-  const APP_VERSION = '2.1.0';
+  const APP_VERSION = '2.1.1';
   const RELEASES_LATEST_URL = 'https://github.com/xling001/radio-diary/releases/latest';
   const RELEASES_API_URL = 'https://api.github.com/repos/xling001/radio-diary/releases/latest';
 
@@ -228,35 +228,6 @@
     </div>
   </section>
 
-  <!-- 本机手账数据 -->
-  <section class="summary-sheet set-card">
-    <h2 class="summary-sheet-title">本地数据</h2>
-    <div class="set-row">
-      <div>
-        <div class="set-lbl">每周自评文字备份与恢复</div>
-        <div class="set-desc">自评周记已双写于本地数据库，建议定期导出一份 .json 备份文件留存</div>
-      </div>
-      <button type="button" class="mini-check-btn" onclick={() => ui.navigate('history/selfcheck')}>
-        去管理 ›
-      </button>
-    </div>
-
-    <div class="set-row">
-      <div>
-        <div class="set-lbl">全部数据仅存于你的设备本地</div>
-        <div class="set-desc tnum">当前共保存 {settings.takeCount} 条练习记录与音频（清空不影响自评文字）</div>
-      </div>
-      <button
-        type="button"
-        class="danger-pill"
-        disabled={settings.takeCount === 0}
-        onclick={handleClearHistory}
-      >
-        清空录音
-      </button>
-    </div>
-  </section>
-
   <!-- 版本与手动检查更新（绝不自动联网） -->
   <section class="summary-sheet set-card">
     <h2 class="summary-sheet-title">版本与更新</h2>
@@ -292,8 +263,27 @@
     {/if}
   </section>
 
+  <!-- 本机手账数据 -->
+  <section class="summary-sheet set-card">
+    <h2 class="summary-sheet-title">本地数据</h2>
+    <div class="set-row">
+      <div>
+        <div class="set-lbl">全部数据仅存于你的设备本地</div>
+        <div class="set-desc tnum">当前共保存 {settings.takeCount} 条练习记录与音频（清空不影响自评文字）</div>
+      </div>
+      <button
+        type="button"
+        class="danger-pill"
+        disabled={settings.takeCount === 0}
+        onclick={handleClearHistory}
+      >
+        清空录音
+      </button>
+    </div>
+  </section>
+
   <div class="ver-foot">
-    电波日记 v2.1.0 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v2.1.1 · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 

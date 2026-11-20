@@ -3,7 +3,8 @@
    所有声学评估经由 ../../core/index.js 调用
    =========================================================== */
 
-import { pitchName, renderConsultationMarkdown } from '../../core/index.js';
+import { pitchName } from '../../core/index.js';
+import { renderConsultationMarkdown } from '../../core/export.js';
 
 const css = (k, fb) => (typeof window !== 'undefined' && window.cssVar ? window.cssVar(k, fb) : fb);
 

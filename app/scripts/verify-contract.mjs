@@ -495,6 +495,20 @@ if (!fs.existsSync(coreIndexPath)) {
   if (violationCount === 0) {
     pass('视图层与组件目录遵循架构红线：严禁越过 core 门面直连 dsp/metrics');
   }
+
+  // 反向边界门禁：core/index.js 必须保持纯声学门面，严禁依赖 export.js 或 store/
+  const coreIndexCode = fs.readFileSync(path.join(webSrc, 'core/index.js'), 'utf8');
+  const coreExportCode = fs.readFileSync(path.join(webSrc, 'core/export.js'), 'utf8');
+  if (/from\s+['"][^'"]*(export\.js|store\/)[^'"]*['"]/.test(coreIndexCode)) {
+    fail('架构红线违背：core/index.js 引用了 export.js 或 store/，破坏纯声学门面纯净性');
+  } else {
+    pass('core/index.js 保持纯声学门面（无 export.js / store/ 反向依赖）');
+  }
+  if (/from\s+['"][^'"]*store\/[^'"]*['"]/.test(coreExportCode)) {
+    fail('架构红线违背：core/export.js 引用了 store/，破坏核心层存储无关性');
+  } else {
+    pass('core/export.js 无 store/ 与 indexedDB 依赖');
+  }
 }
 
 // 27. 静态检查：视觉 Token 与水彩手账设计规范门禁 (docs/48 §4)

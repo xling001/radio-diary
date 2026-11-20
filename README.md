@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/xling001/radio-diary/releases/tag/v2.1.0"><img src="https://img.shields.io/badge/Release-v2.1.0-5BCEFA.svg" alt="Release v2.1.0" /></a>
+  <a href="https://github.com/xling001/radio-diary/releases/tag/v2.1.1"><img src="https://img.shields.io/badge/Release-v2.1.1-5BCEFA.svg" alt="Release v2.1.1" /></a>
   <a href="https://xling001.github.io/radio-diary/"><img src="https://img.shields.io/badge/Web%20PWA-iOS%20%26%20Desktop-7BC2BC.svg" alt="Web PWA Online" /></a>
   <img src="https://img.shields.io/badge/Focus-MtF%20%2F%20Transfemme-F5A9B8.svg" alt="MtF Focused" />
   <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-7BB4D8.svg" alt="100% Offline" />
@@ -14,7 +14,7 @@
 
 # 电波日记 MtF 版 (Radio Diary · MtF Edition)
 
-> **面向跨性别女性（MtF）的纯本地嗓音练习手账 · v2.1.0**  
+> **面向跨性别女性（MtF）的纯本地嗓音练习手账 · v2.1.1**  
 > 零联网上传 · 去病理化表达 · 离线声学反馈 + 练习手账 + 外部 AI 导出联动  
 >
 > 🌐 **在线网页版（iOS Safari / 桌面端免安装即用）**：👉 **[https://xling001.github.io/radio-diary/](https://xling001.github.io/radio-diary/)**（同样纯本地浏览器计算，iOS Safari 可「添加到主屏幕」作为桌面 App 使用）
@@ -59,7 +59,7 @@
 
 ## 📦 下载与使用
 
-- **Android 用户**：可在 **[Releases (v2.1.0)](https://github.com/xling001/radio-diary/releases)** 页面下载构建好的安装包（包名保留 `com.transvoice.voice`，支持从旧版「清籁手帐」平滑覆盖升级并保留本地数据）。
+- **Android 用户**：可在 **[Releases (v2.1.1)](https://github.com/xling001/radio-diary/releases)** 页面下载构建好的安装包（包名保留 `com.transvoice.voice`，支持从旧版「清籁手帐」平滑覆盖升级并保留本地数据）。
 - **iOS / 桌面端与试用体验**：无需安装，直接用 Safari / Chrome / Edge 打开在线网页版 👉 **[https://xling001.github.io/radio-diary/](https://xling001.github.io/radio-diary/)**，所有录音和计算同样只在本地浏览器运行；iOS 用户点浏览器底部分享键「添加到主屏幕」即可接近原生离线应用体验（也可一并了解优秀的姊妹开源在线工具 [Koenami](https://github.com/transnavi/koenami)）。
 - **自编译开发者**：参见下方目录与本地构建步骤。
 
@@ -136,7 +136,7 @@ node .\app\scripts\test-audit-round.mjs
 ```powershell
 # 自动触发 Vite build，并通过 aapt2 + javac + d8 + zipalign + apksigner 打包
 .\app\scripts\build-apk.ps1
-# 输出位于：app\build\transvoice-2.1.0-debug.apk
+# 输出位于：app\build\transvoice-2.1.1-debug.apk
 ```
 
 ---

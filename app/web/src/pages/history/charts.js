@@ -16,7 +16,7 @@ export function paintHeatmap(canvas, takes = []) {
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   const w = Math.max(260, Math.round(rect.width || canvas.clientWidth || 320));
-  const h = 116;
+  const h = 136;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
     canvas.width = w * dpr;
@@ -29,7 +29,8 @@ export function paintHeatmap(canvas, takes = []) {
 
   const paperSoft = css('--paper-3', '#F4F6F9');
   const groove = css('--paper-groove', '#E8EDF4');
-  const ink3 = css('--ink-3', '#8795A6');
+  const ink2 = css('--ink-2', '#525059');
+  const ink3 = css('--ink-3', '#6B6975');
   const mintSoft = css('--crayon-mint-soft', 'rgba(110, 181, 175, 0.25)');
   const mint = css('--crayon-mint', '#6EB5AF');
   const coral = css('--crayon-coral', '#E27370');
@@ -47,9 +48,9 @@ export function paintHeatmap(canvas, takes = []) {
   today.setHours(0, 0, 0, 0);
   const start = new Date(today.getTime() - (totalDays - 1) * 86400000);
 
-  const padL = 10;
-  const padR = 10;
-  const padT = 18;
+  const padL = 12;
+  const padR = 12;
+  const padT = 26;
   const padB = 10;
   const gridW = w - padL - padR;
   const gridH = h - padT - padB;
@@ -62,14 +63,16 @@ export function paintHeatmap(canvas, takes = []) {
   ctx.roundRect(0, 0, w, h, 14);
   ctx.fill();
 
-  ctx.fillStyle = ink3;
-  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = ink2;
+  ctx.font = '600 12px "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", system-ui, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('近 12 周练习脚印', padL, 4);
+  ctx.fillText('近 12 周练习脚印', padL, 7);
 
+  ctx.fillStyle = ink3;
+  ctx.font = '500 11px "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", system-ui, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('今天', w - padR, 4);
+  ctx.fillText('今天', w - padR, 7);
 
   for (let i = 0; i < totalDays; i++) {
     const day = new Date(start.getTime() + i * 86400000);
