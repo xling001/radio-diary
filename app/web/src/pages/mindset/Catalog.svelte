@@ -99,7 +99,13 @@
     display: flex;
     gap: 6px;
     overflow-x: auto;
-    padding: 2px 0;
+    padding: 2px 18px 2px 0;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 20px), transparent 100%);
+    mask-image: linear-gradient(to right, black 0, black calc(100% - 20px), transparent 100%);
+  }
+  .group-bar::-webkit-scrollbar {
+    display: none;
   }
   .group-pill {
     flex-shrink: 0;

@@ -72,7 +72,7 @@ export const GUIDE_CHAPTERS = [
     cat: '02 · 外部AI扩展',
     readMin: 2,
     tone: 'indigo',
-    title: '数据怎么给外部 AI？问诊包、多选对比与体感标注',
+    title: '数据怎么给外部 AI？问诊包、批量对比与体感标注',
     summary: 'App 负责提供离线客观读数，但声音听着舒不舒服、脖子累不累只有你知道。把主观体感和客观数据拼在一起交给外部 AI，复盘最准。',
     bulletsTitle: '本节核心要点',
     bullets: [

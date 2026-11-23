@@ -39,7 +39,7 @@ $VerCode = $manifestXml.manifest.'versionCode'
 if (-not $VerCode) { $VerCode = "2" }
 $VerName = $manifestXml.manifest.'versionName'
 if (-not $VerName) { $VerName = "0.1.1" }
-$apkName = "transvoice-$VerName-debug.apk"
+$apkName = "radio-diary-v$VerName.apk"
 
 # ---------- 自动归档旧版 APK 到 build/archive ----------
 $archiveDir = Join-Path $B "build\archive"

@@ -376,9 +376,13 @@
       </div>
 
       {#if trendMetric === 'heatmap'}
-        <canvas bind:this={heatmapCanvas} class="heatmap-canvas"></canvas>
+        <div role="img" aria-label={`近 12 周练习脚印热力图，共 ${takes.length} 条记录`}>
+          <canvas bind:this={heatmapCanvas} class="heatmap-canvas" aria-hidden="true"></canvas>
+        </div>
       {:else}
-        <canvas bind:this={trendCanvas} class="trend-canvas"></canvas>
+        <div role="img" aria-label={trendMetric === 'pitch' ? '历史练习中位音高 Hz 变化趋势图' : '历史练习发声轻重 H1-H2 变化趋势图'}>
+          <canvas bind:this={trendCanvas} class="trend-canvas" aria-hidden="true"></canvas>
+        </div>
       {/if}
     </div>
   {/if}
@@ -389,6 +393,7 @@
       <div class="row-gap-sm">
         <button
           type="button"
+          aria-pressed={!filterFav}
           class="pill-toggle {!filterFav ? 'active' : ''}"
           onclick={() => { filterFav = false; }}
         >
@@ -396,6 +401,7 @@
         </button>
         <button
           type="button"
+          aria-pressed={filterFav}
           class="pill-toggle {filterFav ? 'active' : ''}"
           onclick={() => { filterFav = true; }}
         >
@@ -405,6 +411,7 @@
 
       <button
         type="button"
+        aria-pressed={batchMode}
         class="pill-toggle {batchMode ? 'active-sky' : ''}"
         onclick={() => {
           batchMode = !batchMode;
@@ -466,6 +473,7 @@
             <button
               type="button"
               class="day-head"
+              aria-expanded={grp.isOpen}
               onclick={() => toggleGroup(grp.key, grp.isOpen)}
             >
               <span class="day-title">{formatDayTitle(grp.key)}</span>
@@ -500,8 +508,14 @@
                   class="take-item {checked ? 'is-selected' : ''} {seal ? `has-seal seal-${seal.tone}` : ''}"
                   role="button"
                   tabindex="0"
+                  aria-pressed={batchMode ? checked : undefined}
                   onclick={() => openTakeAnalysis(t)}
-                  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') openTakeAnalysis(t); }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openTakeAnalysis(t);
+                    }
+                  }}
                 >
                   {#if batchMode}
                     <span class="check-dot {checked ? 'checked' : ''}">{checked ? '✓' : ''}</span>

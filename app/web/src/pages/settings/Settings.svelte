@@ -8,7 +8,16 @@
   import { confirmDlg } from '../../ui/dialog.js';
 
   const DUR_STEPS = [60, 90, 120, 180];
-  const APP_VERSION = '2.1.3';
+  const APP_VERSION = '2.1.4';
+  const VIEW_NAMES = {
+    record: '练习',
+    analysis: '分析',
+    history: '手账',
+    mindset: '指南',
+    library: '素材库',
+  };
+  const backView = $derived((ui.prevView && ui.prevView !== 'settings') ? ui.prevView : 'record');
+  const backLabel = $derived(VIEW_NAMES[backView] || '练习');
   const RELEASES_LATEST_URL = 'https://github.com/xling001/radio-diary/releases/latest';
   const RELEASES_API_URL = 'https://api.github.com/repos/xling001/radio-diary/releases/latest';
 
@@ -115,8 +124,8 @@
 
 <div class="set-page">
   <div class="set-top">
-    <button type="button" class="back-pill" onclick={() => ui.navigate('record')}>
-      ← 返回练习
+    <button type="button" class="back-pill" onclick={() => ui.navigate(backView)}>
+      ← 返回{backLabel}
     </button>
   </div>
 
@@ -132,10 +141,11 @@
         </div>
         <strong class="tnum set-badge">{settings.floorTargetHz} Hz</strong>
       </div>
-      <div class="chip-grid-4">
+      <div class="chip-grid-4" role="group" aria-label="低音托底线频率">
         {#each BASELINE_STEPS as hz}
           <button
             type="button"
+            aria-pressed={settings.floorTargetHz === hz}
             class="opt-chip tnum {settings.floorTargetHz === hz ? 'active' : ''}"
             onclick={() => pickFloorHz(hz)}
           >
@@ -153,6 +163,9 @@
       <label class="switch">
         <input
           type="checkbox"
+          role="switch"
+          aria-checked={settings.autoJump}
+          aria-label="录完后自动跳转分析页"
           checked={settings.autoJump}
           onchange={() => settings.toggleAutoJump()}
         />
@@ -165,10 +178,11 @@
         <div class="set-lbl">单次最长录音时长</div>
         <strong class="tnum set-badge">{settings.maxRecSecs} 秒</strong>
       </div>
-      <div class="chip-grid-4">
+      <div class="chip-grid-4" role="group" aria-label="单次最长录音时长">
         {#each DUR_STEPS as sec}
           <button
             type="button"
+            aria-pressed={settings.maxRecSecs === sec}
             class="opt-chip tnum {settings.maxRecSecs === sec ? 'active' : ''}"
             onclick={() => pickMaxDur(sec)}
           >
@@ -185,9 +199,10 @@
 
     <div class="set-block">
       <div class="set-lbl">界面外观</div>
-      <div class="chip-grid-2">
+      <div class="chip-grid-2" role="group" aria-label="界面外观">
         <button
           type="button"
+          aria-pressed={settings.themePref !== 'dark'}
           class="opt-chip theme-opt {settings.themePref !== 'dark' ? 'active' : ''}"
           onclick={() => pickTheme('light')}
         >
@@ -206,6 +221,7 @@
         </button>
         <button
           type="button"
+          aria-pressed={settings.themePref === 'dark'}
           class="opt-chip theme-opt {settings.themePref === 'dark' ? 'active' : ''}"
           onclick={() => pickTheme('dark')}
         >
@@ -283,7 +299,7 @@
   </section>
 
   <div class="ver-foot">
-    电波日记 v2.1.3 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v2.1.4 · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 

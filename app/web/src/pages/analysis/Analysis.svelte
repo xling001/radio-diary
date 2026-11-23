@@ -766,8 +766,12 @@
         </div>
 
         {#if hasSpectralVisual}
-          <div class="hero-canvas-wrap">
-            <canvas bind:this={heroCanvas} class="hero-canvas"></canvas>
+          <div
+            class="hero-canvas-wrap"
+            role="img"
+            aria-label={`音色象限与谐波分布图：${ns.quadrant?.summaryLabel || '发声状态'}`}
+          >
+            <canvas bind:this={heroCanvas} class="hero-canvas" aria-hidden="true"></canvas>
           </div>
           <div class="vis-legend" aria-hidden="true">
             <span class="leg-item"><span class="leg-dot"></span>圆点与光晕：本次位置与波动区间</span>
@@ -904,14 +908,14 @@
         </summary>
 
         <div class="drawer-body">
-          <div class="mini-chart-block">
+          <div class="mini-chart-block" role="img" aria-label="本次录音的音高随时间走向折线图">
             <div class="mini-chart-title">音高随时间走向（珊瑚点为气泡音/嘎裂帧）</div>
-            <canvas bind:this={pitchCanvas} class="detail-canvas"></canvas>
+            <canvas bind:this={pitchCanvas} class="detail-canvas" aria-hidden="true"></canvas>
           </div>
 
-          <div class="mini-chart-block">
+          <div class="mini-chart-block" role="img" aria-label="中文元音 F1-F2 共鸣空间分布图">
             <div class="mini-chart-title">中文元音共鸣分布（按连续声道尺度归一化归类）</div>
-            <canvas bind:this={vowelCanvas} class="detail-canvas vowel-canvas"></canvas>
+            <canvas bind:this={vowelCanvas} class="detail-canvas vowel-canvas" aria-hidden="true"></canvas>
             <div class="mini-chart-sub">虚线灰框：常见高共鸣轮廓（衣/啊/乌） · 实心彩点：本次实测；横轴向左代表舌位靠前，纵轴向上代表口腔收小。</div>
           </div>
 

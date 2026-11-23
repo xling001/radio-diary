@@ -301,8 +301,12 @@
       </div>
     {/if}
 
-    <div class="live-canvas-wrap">
-      <canvas bind:this={canvasEl} class="live-canvas"></canvas>
+    <div
+      class="live-canvas-wrap"
+      role="img"
+      aria-label={isUnvoicedCheck ? '清擦音练习：纯吹气无声带基频曲线' : `实时音高曲线与参考底线（${settings.floorTargetHz} Hz）`}
+    >
+      <canvas bind:this={canvasEl} class="live-canvas" aria-hidden="true"></canvas>
     </div>
 
     <!-- 三个简洁实时卡 -->

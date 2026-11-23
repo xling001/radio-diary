@@ -99,7 +99,8 @@ export function paintLivePitch(canvas, frames = [], floorHz = 160, opts = {}) {
     ctx.fillText(String(refHz), padL - 6, y);
   }
 
-  // 专属安全托底线（标签默认置于虚线下方右侧，避免与上方居中提示气泡及高音区曲线打架）
+  // 专属安全托底线（仅先画虚线，标签延后至曲线绘制完成再叠放于最上层，避免曲线穿字）
+  let floorBadgeSpec = null;
   if (floorHz && floorHz >= minHz && floorHz <= maxHz) {
     const yFloor = toY(floorHz);
     ctx.strokeStyle = mint;
@@ -117,17 +118,27 @@ export function paintLivePitch(canvas, frames = [], floorHz = 160, opts = {}) {
     const tagH = 18;
     const tagX = padL + pw - tagW - 6;
     const tagY = (yFloor + tagH + 4 <= padT + ph) ? (yFloor + 4) : (yFloor - tagH - 4);
-    ctx.fillStyle = css('--seal-tag-bg', 'rgba(255, 254, 252, 0.92)');
+    floorBadgeSpec = { tagText, tagW, tagH, tagX, tagY };
+  }
+
+  const paintFloorBadge = () => {
+    if (!floorBadgeSpec) return;
+    const { tagText, tagW, tagH, tagX, tagY } = floorBadgeSpec;
+    ctx.font = '600 10px system-ui, sans-serif';
+    ctx.fillStyle = css('--paper-card', '#FFFEFC');
     ctx.beginPath();
     ctx.roundRect(tagX, tagY, tagW, tagH, 4);
     ctx.fill();
+    ctx.strokeStyle = mint;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
     ctx.fillStyle = mint;
-    ctx.fillRect(tagX + 2, tagY + 3, 2.5, tagH - 6);
+    ctx.fillRect(tagX + 2.5, tagY + 3.5, 2.5, tagH - 7);
     ctx.fillStyle = css('--crayon-mint-ink', mint);
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillText(tagText, tagX + tagW - 6, tagY + tagH / 2 + 0.5);
-  }
+  };
 
   // 绘制最近 8 秒滚动轨迹（空闲提示居中置于上方 >175Hz 区域，与下方托底线及标签彻底错开）
   if (!frames.length) {
@@ -144,6 +155,7 @@ export function paintLivePitch(canvas, frames = [], floorHz = 160, opts = {}) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(emptyMsg, cx, cy);
+    paintFloorBadge();
     return;
   }
 
@@ -196,4 +208,6 @@ export function paintLivePitch(canvas, frames = [], floorHz = 160, opts = {}) {
     ctx.lineWidth = 1.8;
     ctx.stroke();
   }
+
+  paintFloorBadge();
 }

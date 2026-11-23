@@ -145,7 +145,10 @@ function syncViewChrome(view, sub = null) {
   });
 
   document.querySelectorAll('.nav button[data-go]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.go === view);
+    const isActive = btn.dataset.go === view;
+    btn.classList.toggle('active', isActive);
+    if (isActive) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
   });
 
   renderGreeting(view, sub);

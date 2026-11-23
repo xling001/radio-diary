@@ -217,6 +217,7 @@
       <button
         type="button"
         class="toggle-form-btn"
+        aria-expanded={formOpen}
         onclick={() => { formOpen = !formOpen; }}
       >
         {formOpen ? '收起' : '+ 写一次'}
@@ -229,10 +230,11 @@
           <div class="q-block">
             <div class="q-title">{q.title}</div>
             <div class="q-prompt">{q.prompt}</div>
-            <div class="q-opts">
+            <div class="q-opts" role="group" aria-label={q.title}>
               {#each q.options as opt}
                 <button
                   type="button"
+                  aria-pressed={answers[q.key] === opt}
                   class="q-opt-btn {answers[q.key] === opt ? (q.redlineOption === opt ? 'active-warn' : 'active') : ''}"
                   onclick={() => pickOption(q.key, opt)}
                 >
@@ -251,10 +253,11 @@
 
         <div class="q-block">
           <div class="q-title">6. 本周主要用声与练习场合（可多选）</div>
-          <div class="q-opts">
+          <div class="q-opts" role="group" aria-label="本周主要用声与练习场合">
             {#each SELF_CONTEXTS as ctx}
               <button
                 type="button"
+                aria-pressed={contexts.includes(ctx)}
                 class="q-opt-btn {contexts.includes(ctx) ? 'active-mint' : ''}"
                 onclick={() => toggleContext(ctx)}
               >
@@ -266,11 +269,12 @@
 
         <div class="q-block">
           <div class="q-title">7. 心情贴纸</div>
-          <div class="q-opts">
+          <div class="q-opts" role="group" aria-label="心情贴纸">
             {#each SELF_MOODS as m}
               {@const val = `${m.emoji} ${m.label}`}
               <button
                 type="button"
+                aria-pressed={mood === val}
                 class="q-opt-btn {mood === val ? 'active-coral' : ''}"
                 onclick={() => { mood = val; }}
               >
