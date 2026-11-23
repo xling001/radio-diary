@@ -31,7 +31,42 @@
 > 📚 **关于理论知识库（已独立开源）**  
 > 与本应用配套的普通话跨性别女性嗓音训练体系、解剖生理学与声学常模已作为一个独立开源项目维护和发布：  
 > 👉 **[xling001/transvoice-mandarin-handbook（跨性别女性嗓音训练解剖与声学常模知识库 · 普通话版）](https://github.com/xling001/transvoice-mandarin-handbook)**  
-> 为避免重复维护，知识库全文不冗余存放在本仓库内；应用内「指南」首章也提供了直达该知识库的入口卡片。
+> （在线网页阅读：**[xling001.github.io/transvoice-mandarin-handbook](https://xling001.github.io/transvoice-mandarin-handbook/#/preamble)** ；应用内「指南」首章也提供了直达入口卡片。）
+
+---
+
+## 📱 实机界面预览 (v2.1.4)
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="./assets/screenshots/01-practice-script.jpg" width="220" alt="练习页 · 读素材与实时音高曲线" /><br />
+      <sub><b>练习 · 分场景跟读与实时音高</b><br />眉批提示 · 160 Hz 托底参照线</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./assets/screenshots/02-analysis-pitch.jpg" width="220" alt="分析页 · 音高与声带状态" /><br />
+      <sub><b>分析 · 音高与声带振动指标</b><br />音区分布 · H1-H2 / HNR / 抖动</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./assets/screenshots/03-analysis-quadrant.jpg" width="220" alt="分析页 · 谐波谱与音色象限" /><br />
+      <sub><b>分析 · 谐波衰减与音色象限</b><br />F1–F3 / ΔF 共振与咝音重心</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <img src="./assets/screenshots/04-mood-stamp.jpg" width="220" alt="体感印章 · 心情与喉部体感记录" /><br />
+      <sub><b>体感印章 · 主观状态备忘</b><br />舒适感优先 · 与数据对照复盘</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./assets/screenshots/05-history-journal.jpg" width="220" alt="手账页 · 12周练习脚印与自评" /><br />
+      <sub><b>手账 · 12 周脚印与按天归档</b><br />每周自评入口 · 批量对比导出</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./assets/screenshots/06-library-sets.jpg" width="220" alt="素材库 · 8大分类与自定义导入" /><br />
+      <sub><b>素材库 · 8 大内置分类与自建</b><br />日常对话 · 故事 · 文学少女</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -69,7 +104,7 @@
 
 ```text
 radio-diary/
-├── assets/                      # 仓库展示图 (Social Preview Banner)
+├── assets/                      # 仓库展示图 (Social Preview Banner) 与实机界面截图
 ├── app/
 │   ├── android/                 # 免 Gradle 原生 Android WebView 宿主外壳（包名 com.transvoice.voice）
 │   │   ├── AndroidManifest.xml
