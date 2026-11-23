@@ -73,18 +73,10 @@ self.addEventListener('fetch', (event) => {
   // 绝不拦截外部请求（如用户手动点击「检查更新」向 GitHub 查询版本）
   if (url.origin !== self.location.origin) return;
 
-  // 页面导航：优先网络拿新版，离线或超时立即回退本地缓存 index.html
+  // 页面导航：优先网络获取新版，离线或失败时精确回退该代预缓存的 index.html（不跨代覆写防资源错配）
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((c) => c.put('./index.html', copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => caches.match('./index.html').then((r) => r || caches.match('./')))
+      fetch(req).catch(() => caches.match('./index.html').then((r) => r || caches.match('./')))
     );
     return;
   }

@@ -13,6 +13,7 @@ let dbPromise = null;
 
 export function openAppDB() {
   if (dbPromise) return dbPromise;
+  let blocked = false;
   dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
@@ -27,11 +28,16 @@ export function openAppDB() {
       }
     };
     req.onblocked = () => {
+      blocked = true;
       dbPromise = null;
       reject(new Error('本地数据库正在升级，请先关闭本应用的其它页面后重试'));
     };
     req.onsuccess = () => {
       const db = req.result;
+      if (blocked) {
+        try { db.close(); } catch {}
+        return;
+      }
       db.onversionchange = () => {
         try { db.close(); } catch {}
         dbPromise = null;

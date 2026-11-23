@@ -187,9 +187,13 @@ export const SelfCheckStore = {
         if (typeof indexedDB !== 'undefined') {
           try {
             await txStore(STORE, 'readwrite', (os) => os.put(item));
+            added += 1;
           } catch {}
+        } else {
+          const mirror = [item, ...readMirror().filter((x) => x.id !== item.id)];
+          writeMirror(mirror);
+          added += 1;
         }
-        added += 1;
       }
     }
     const all = await this.all();

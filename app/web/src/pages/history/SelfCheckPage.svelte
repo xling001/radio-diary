@@ -138,6 +138,11 @@
   function onBackupPicked(e) {
     const file = e.target?.files?.[0];
     if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      showMsg('备份文件超过 8 MB，请确认选择了正确的 .json 手账备份');
+      if (e.target) e.target.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async () => {
       try {

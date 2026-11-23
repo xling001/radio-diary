@@ -16,6 +16,7 @@ class SettingsState {
   floorTargetHz = $state(160);
   themePref = $state('system');
   takeCount = $state(0);
+  takeBytes = $state(0);
   micOk = $state(true);
   micDesc = $state('默认麦克风 · 按需授权');
 
@@ -49,9 +50,16 @@ class SettingsState {
       const support = micSupportCheck();
       this.micOk = support.ok;
       this.micDesc = support.ok ? '默认设备 · 按需授权' : (support.message || '不可用');
-      this.takeCount = await TakeStore.count();
+      const rows = await TakeStore.all();
+      this.takeCount = rows.length;
+      let bytes = 0;
+      for (const r of rows) {
+        if (r?.blob && typeof r.blob.size === 'number') bytes += r.blob.size;
+      }
+      this.takeBytes = bytes;
     } catch {
       this.takeCount = 0;
+      this.takeBytes = 0;
     }
   }
 

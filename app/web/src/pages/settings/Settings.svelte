@@ -8,7 +8,7 @@
   import { confirmDlg } from '../../ui/dialog.js';
 
   const DUR_STEPS = [60, 90, 120, 180];
-  const APP_VERSION = '2.1.4';
+  const APP_VERSION = '2.1.5';
   const VIEW_NAMES = {
     record: '练习',
     analysis: '分析',
@@ -18,6 +18,12 @@
   };
   const backView = $derived((ui.prevView && ui.prevView !== 'settings') ? ui.prevView : 'record');
   const backLabel = $derived(VIEW_NAMES[backView] || '练习');
+  const storageSizeText = $derived.by(() => {
+    const b = settings.takeBytes || 0;
+    if (b <= 0) return '0 KB';
+    if (b >= 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+    return `${Math.max(1, Math.round(b / 1024))} KB`;
+  });
   const RELEASES_LATEST_URL = 'https://github.com/xling001/radio-diary/releases/latest';
   const RELEASES_API_URL = 'https://api.github.com/repos/xling001/radio-diary/releases/latest';
 
@@ -285,7 +291,9 @@
     <div class="set-row">
       <div>
         <div class="set-lbl">全部数据仅存于你的设备本地</div>
-        <div class="set-desc tnum">当前共保存 {settings.takeCount} 条练习记录与音频（清空不影响自评文字）</div>
+        <div class="set-desc tnum">
+          当前共保存 {settings.takeCount} 条练习记录与音频（音频约占 {storageSizeText}，清空不影响自评文字）
+        </div>
       </div>
       <button
         type="button"
@@ -299,7 +307,7 @@
   </section>
 
   <div class="ver-foot">
-    电波日记 v2.1.4 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v2.1.5 · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 

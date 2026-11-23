@@ -20,6 +20,7 @@
   let trendMetric = $state('heatmap'); // 'heatmap' | 'pitch' | 'weight'
   let batchMode = $state(false);
   let selectedIds = $state(new Set());
+  let includeSelfCheckInBatch = $state(false);
   let groupOpenMap = $state(loadOpenMap());
 
   let heatmapCanvas = $state(null);
@@ -210,8 +211,11 @@
       showMsg('请至少勾选 2 条录音进行横向对比');
       return;
     }
-    await exportBatchMarkdown(chosen, { selfChecks: selfChecks.slice(0, 4) });
-    showMsg(`已导出 ${chosen.length} 条长期对比手账 (.md)`);
+    const scPayload = includeSelfCheckInBatch ? selfChecks.slice(0, 4) : [];
+    await exportBatchMarkdown(chosen, { selfChecks: scPayload });
+    showMsg(scPayload.length
+      ? `已导出 ${chosen.length} 条对比手账（含近 ${scPayload.length} 次自评与周记）`
+      : `已导出 ${chosen.length} 条客观对比手账（不含自评周记）`);
     batchMode = false;
     selectedIds = new Set();
   }
@@ -222,10 +226,13 @@
       showMsg('请至少勾选 2 条录音再复制对比给 AI');
       return;
     }
-    const md = renderBatchMarkdown(chosen, selfChecks.slice(0, 4));
+    const scPayload = includeSelfCheckInBatch ? selfChecks.slice(0, 4) : [];
+    const md = renderBatchMarkdown(chosen, scPayload);
     try {
       await navigator.clipboard.writeText(md);
-      showMsg(`已复制 ${chosen.length} 条对比与趋势摘要给 AI`);
+      showMsg(scPayload.length
+        ? `已复制 ${chosen.length} 条对比（含近 ${scPayload.length} 次自评与周记原文）给 AI`
+        : `已复制 ${chosen.length} 条客观对比数据（不含自评周记）给 AI`);
       batchMode = false;
       selectedIds = new Set();
     } catch {
@@ -461,6 +468,12 @@
             删除
           </button>
         </div>
+        {#if selfChecks.length > 0}
+          <label class="batch-privacy-opt">
+            <input type="checkbox" bind:checked={includeSelfCheckInBatch} />
+            <span>对比给 AI 时附带近 4 次自评与周记原文（默认关闭保护隐私）</span>
+          </label>
+        {/if}
       </div>
     {/if}
 
@@ -796,6 +809,20 @@
   .batch-actions {
     flex-wrap: wrap;
     justify-content: flex-end;
+  }
+  .batch-privacy-opt {
+    flex-basis: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-11);
+    color: var(--crayon-sky-ink);
+    cursor: pointer;
+    padding-top: 2px;
+  }
+  .batch-privacy-opt input {
+    margin: 0;
+    accent-color: var(--crayon-sky-solid);
   }
   .batch-cnt {
     font-size: var(--fs-13);
