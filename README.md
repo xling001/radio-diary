@@ -94,7 +94,7 @@
 
 ## 📦 下载与使用
 
-- **Android 用户**：可在 **[Releases (v2.1.4)](https://github.com/xling001/radio-diary/releases)** 页面下载构建好的安装包（包名保留 `com.transvoice.voice`，支持从旧版「清籁手帐」平滑覆盖升级并保留本地数据）。
+- **Android 用户（推荐国内分流）**：可直接在 **[蓝奏云高速分流网盘](https://wwbhg.lanzouv.com/b0o0ji4bc)**（提取密码：`1cvt`）免登录极速下载安装包；亦可在 **[GitHub Releases (v2.1.4)](https://github.com/xling001/radio-diary/releases)** 页面下载（包名保留 `com.transvoice.voice`，支持从旧版「清籁手帐」平滑覆盖升级并保留本地数据）。
 - **iOS / 桌面端与试用体验**：无需安装，直接用 Safari / Chrome / Edge 打开在线网页版 👉 **[https://xling001.github.io/radio-diary/](https://xling001.github.io/radio-diary/)**，所有录音和计算同样只在本地浏览器运行；iOS 用户点浏览器底部分享键「添加到主屏幕」即可接近原生离线应用体验（也可一并了解优秀的姊妹开源在线工具 [Koenami](https://github.com/transnavi/koenami)）。
 - **自编译开发者**：参见下方目录与本地构建步骤。
 
