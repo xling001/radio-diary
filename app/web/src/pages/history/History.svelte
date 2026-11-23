@@ -140,6 +140,33 @@
 
   const visibleTakes = $derived(filterFav ? takes.filter((t) => t.fav) : takes);
 
+  const allVisibleSelected = $derived(
+    visibleTakes.length > 0 && visibleTakes.every((t) => selectedIds.has(t.id))
+  );
+
+  function isDayAllSelected(grp) {
+    return grp.items.length > 0 && grp.items.every((t) => selectedIds.has(t.id));
+  }
+
+  function toggleDaySelection(e, grp) {
+    e.stopPropagation();
+    const next = new Set(selectedIds);
+    const allInDay = isDayAllSelected(grp);
+    for (const item of grp.items) {
+      if (allInDay) next.delete(item.id);
+      else next.add(item.id);
+    }
+    selectedIds = next;
+  }
+
+  function toggleSelectAllVisible() {
+    if (allVisibleSelected) {
+      selectedIds = new Set();
+    } else {
+      selectedIds = new Set(visibleTakes.map((t) => t.id));
+    }
+  }
+
   const groupedDays = $derived.by(() => {
     const groups = new Map();
     for (const t of visibleTakes) {
@@ -373,7 +400,17 @@
 
     {#if batchMode}
       <div class="batch-bar">
-        <span class="batch-cnt">已选 {selectedIds.size} 条</span>
+        <div class="batch-left">
+          <span class="batch-cnt tnum">已选 {selectedIds.size} 条</span>
+          <button
+            type="button"
+            class="batch-btn btn-soft"
+            disabled={visibleTakes.length === 0}
+            onclick={toggleSelectAllVisible}
+          >
+            {allVisibleSelected ? '取消全选' : '全选'}
+          </button>
+        </div>
         <div class="row-gap-sm">
           <button
             type="button"
@@ -398,20 +435,32 @@
     <!-- 第三层：按天折叠的手账列表 -->
     <div class="day-groups">
       {#each groupedDays as grp (grp.key)}
+        {@const dayAll = isDayAllSelected(grp)}
         <div class="summary-sheet day-card">
-          <button
-            type="button"
-            class="day-head {grp.isOpen ? 'is-open' : ''}"
-            onclick={() => toggleGroup(grp.key, grp.isOpen)}
-          >
-            <span class="day-title">{formatDayTitle(grp.key)}</span>
-            <span class="day-meta">
-              <span>{grp.items.length} 条</span>
-              <svg class="day-chev {grp.isOpen ? 'open' : ''}" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </span>
-          </button>
+          <div class="day-head-row {grp.isOpen ? 'is-open' : ''}">
+            <button
+              type="button"
+              class="day-head"
+              onclick={() => toggleGroup(grp.key, grp.isOpen)}
+            >
+              <span class="day-title">{formatDayTitle(grp.key)}</span>
+              <span class="day-meta">
+                <span>{grp.items.length} 条</span>
+                <svg class="day-chev {grp.isOpen ? 'open' : ''}" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </span>
+            </button>
+            {#if batchMode}
+              <button
+                type="button"
+                class="day-sel-btn {dayAll ? 'is-all' : ''}"
+                onclick={(e) => toggleDaySelection(e, grp)}
+              >
+                {dayAll ? '取消当天' : '全选当天'}
+              </button>
+            {/if}
+          </div>
 
           {#if grp.isOpen}
             <div class="take-list">
@@ -694,10 +743,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 10px 14px;
     background: var(--crayon-sky-soft);
     border-radius: var(--radius-md);
+  }
+  .batch-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
   .batch-cnt {
     font-size: var(--fs-13);
@@ -711,6 +766,12 @@
     font-size: var(--fs-12);
     font-weight: 600;
     cursor: pointer;
+    white-space: nowrap;
+  }
+  .batch-btn.btn-soft {
+    background: var(--paper-card);
+    color: var(--crayon-sky-ink);
+    border: 1px solid var(--border-soft);
   }
   .batch-btn.btn-sky {
     background: var(--crayon-sky);
@@ -734,8 +795,19 @@
     margin-bottom: 0;
     padding: 12px 14px;
   }
+  .day-head-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .day-head-row.is-open {
+    border-bottom: 1px dashed var(--border-soft);
+    padding-bottom: 8px;
+  }
   .day-head {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     border: none;
     background: transparent;
     display: flex;
@@ -745,9 +817,22 @@
     padding: 2px 0;
     text-align: left;
   }
-  .day-head.is-open {
-    border-bottom: 1px dashed var(--border-soft);
-    padding-bottom: 8px;
+  .day-sel-btn {
+    flex-shrink: 0;
+    border: 1px solid var(--border-soft);
+    background: var(--paper-3);
+    color: var(--ink-2);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: var(--fs-11);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .day-sel-btn.is-all {
+    background: var(--crayon-mint-soft);
+    color: var(--crayon-mint-ink);
+    border-color: var(--crayon-mint);
   }
   .day-title {
     font-size: var(--fs-14);

@@ -104,7 +104,21 @@
               </div>
             </div>
           {/if}
-          {#if sec.linkUrl}
+          {#if sec.links?.length}
+            {#each sec.links as lk (lk.url)}
+              <div class="sec-link-card">
+                <div class="sec-link-url">{lk.url}</div>
+                <div class="sec-link-actions">
+                  <a class="sec-link-btn {lk.tone === 'mint' ? 'tone-mint' : ''}" href={lk.url} target="_blank" rel="noopener noreferrer">
+                    {lk.label || '打开链接 ↗'}
+                  </a>
+                  <button type="button" class="sec-link-copy" onclick={() => copyUrl(lk.url)}>
+                    复制链接
+                  </button>
+                </div>
+              </div>
+            {/each}
+          {:else if sec.linkUrl}
             <div class="sec-link-card">
               <div class="sec-link-url">{sec.linkUrl}</div>
               <div class="sec-link-actions">
@@ -374,6 +388,10 @@
     font-weight: 600;
     background: var(--crayon-sky-soft);
     color: var(--crayon-sky-ink);
+  }
+  .sec-link-btn.tone-mint {
+    background: var(--crayon-mint-soft);
+    color: var(--crayon-mint-ink);
   }
   .sec-link-copy {
     border: 1px solid var(--border-soft);
