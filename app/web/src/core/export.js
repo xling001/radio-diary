@@ -3,10 +3,11 @@
 
    【功能矩阵】
    1. toExport(take): 白名单抽取纯净声学契约对象（剔除内部调试字段）；
-   2. renderDiaryMarkdown(take): 生成面向个人的温情「声音日记」Markdown；
-   3. renderConsultationMarkdown(take): 生成面向 AI 的结构化「咨询包」Markdown（含口径注）；
-   4. renderBatchMarkdown(takes): 生成多段录音横向对比 Markdown（含素材可比性自动判定）；
-   5. saveMarkdownFile(content, fileName): 原生桥接 / Web Share / 下载降级保存。
+   2. renderAiPrimerPrompt(opts): 生成「简短知识库与 AI 校准前导包」（新对话贴一次）；
+   3. renderDiaryMarkdown(take): 生成面向个人的温情「声音日记」Markdown；
+   4. renderConsultationMarkdown(take): 生成面向 AI 的结构化「单次深度咨询包」Markdown；
+   5. renderBatchMarkdown(takes, selfChecks): 生成多段横向与长期阶段对比 Markdown；
+   6. saveMarkdownFile(content, fileName): 原生桥接 / Web Share / 下载降级保存。
    =========================================================== */
 
 import { normalizeStats } from '../metrics/normalizeStats.js';
@@ -96,9 +97,40 @@ export function toExport(take) {
       floorTargetHz: norm.floorTargetHz,
       creakRatio: norm.creakRatio,
     },
+    h1h2GuardActive: norm.h1h2GuardActive === true,
+    h1h2SkipPct: norm.h1h2SkipPct,
     algoVersion: take.algoVersion || ALGO_VERSION,
     kbVersion: KB_VERSION,
   };
+}
+
+/**
+ * 生成「简短普通话 MtF 声学知识库 & AI 对话前导包」（开新对话贴一次）
+ * @param {{ floorTargetHz?: number }} [opts]
+ * @returns {string}
+ */
+export function renderAiPrimerPrompt({ floorTargetHz = 160 } = {}) {
+  return [
+    '# 电波日记 · AI 伴学与声学口径前导包（新对话发一次即可）',
+    '',
+    '请你作为一位温和、去病理化、熟悉「中文普通话跨性别女性（MtF）性别肯定嗓音训练」的练习伙伴，陪我一起对照日常录音数据和体感做轻量复盘。',
+    '',
+    '## 一、沟通与去病理化原则（重要）',
+    '- **禁止打分与评级**：不要给 0～100 分，不要下“合格/像不像男生女生”的武断结论，不使用“声带受损/永久变坏”等恐吓词句。',
+    '- **体感永远优先于数值**：声带不紧、脖肩不累、日常说话自在永远是第一指标；若体感疲劳或持续沙哑 >2 周，优先提示休息与耳鼻喉/嗓音门诊喉镜检查。',
+    '',
+    '## 二、中文普通话声学概念与本软件口径速查',
+    `- **基频 F0（音高）**：145～175 Hz 为中性过渡区，>175 Hz 为女声常见区间；日常安全托底线设为 ${floorTargetHz} Hz。汉语看重自然抑扬（起伏 3～6 半音），不必硬飙高音。`,
+    '- **H1-H2（声门轻重/闭合）**：约 -0.5～+3.5 dB 多为轻薄流动；≤ -1.2 dB 提示声带闭合偏实（练习方向：无声叹气/静音轻笑/闭唇微麻音 `m───` 先减重）。若高前元音里 F1 靠近 2f0 触发避让保护而显示「未测出」，属正常防失真，不代表异常。',
+    '- **F2 / ΔF（前腔共鸣）**：主要在稳定前高元音「衣 /i/」上反映口腔空间与舌位前后（ΔF 常见 1050～1250 Hz）；方向是放松舌根、舌面前部轻抬近硬腭，切勿硬挤喉部。',
+    '- **咝音 /s/ 频谱重心**：参考带 6.0～8.5 kHz，反映前唇齿细腻集中气流。',
+    '- **移动端与语流口径声明**：连续口语的 Jitter（容限约 2.8%）、Shimmer（约 8.0%）与移动端离散分帧读数（约为 Praat 连续分析的 2～3 倍）**不可跨工具硬套稳态长音或临床喉病阈值**。',
+    '',
+    '## 三、接下来我发给你录音数据时，请按这个方式回复',
+    '1. 先回应我的主观体感印章或录音条件限制；',
+    '2. 点出 **1 个当前最稳或做得好的地方**；',
+    '3. 只给 **1 个不需要用力硬顶、当下就能试试的轻松微调动作**（不超过 150 字，简短好记）。',
+  ].join('\n');
 }
 
 function formatStampSummary(stamp) {
@@ -160,13 +192,17 @@ export function renderConsultationMarkdown(take) {
   const exp = toExport(take);
   if (!exp) return '';
 
+  const h12ValueStr = exp.weight.h1h2 != null
+    ? `${exp.weight.h1h2.toFixed(1)} dB`
+    : (exp.h1h2GuardActive || exp.h1h2SkipPct > 0 ? '已避让保护（干净帧不足）' : '未检出');
+
   return `<!-- qinglai-export v1 · format:consultation · algoVersion:${exp.algoVersion} · kbVersion:${exp.kbVersion} -->
-# 电波日记 · 结构化发声数据与咨询包
+# 电波日记 · 结构化发声数据与单次深度咨询包
 
 > 口径速记：F0 为有声帧中位数；起伏为 P10–P90 半音跨度（已剔除句尾淡出）；  
 > ΔF 仅取前高元音 /i/ 帧，值为 1000–1250 Hz 量级；H1−H2 负值偏紧（<-1.2dB）、0 附近为流动轻音重；  
 > Jitter/Shimmer 语流（上限 2.8%/8.0%）不可与稳态长音直接套用；移动端离散分帧测算的稳态长音 Jitter（常模 1.1%~1.7%）约为主流连续金标准（如 Praat PointProcess）的 2~3 倍，切勿跨工具直接硬套临床病理门限；“未测出”表示该特征本次不成立，不等于发声异常。
-
+${!exp.ok ? `> **样本条件受限**：${exp.reasons?.length ? exp.reasons.join('；') : '有效发声或录制条件受限'}（以下数值仅作温和参考，请勿作为定性判断）。\n` : ''}
 ## 记录概况
 - 记录时间：${exp.tsLocal}
 - 练习模式：${exp.mode} · 素材：${exp.setName}
@@ -181,7 +217,7 @@ ${exp.stamp ? `- 体感印章：${formatStampSummary(exp.stamp)}\n` : ''}
 | | 稳定带 P10 ~ P90 | ${exp.f0.p10 && exp.f0.p90 ? `${Math.round(exp.f0.p10)} ~ ${Math.round(exp.f0.p90)} Hz` : '未测出'} | — | 截断两端极值抗爆音 |
 | | 音高起伏跨度 | ${exp.f0.spanSt != null ? exp.f0.spanSt.toFixed(1) + ' 半音' : '未测出'} | 日常 3.0 ~ 6.0 半音 (长句 5~8) | P10–P90 跨度，剔除句尾淡出 |
 | | 音区分布 | 低 ${exp.f0.maleZonePct ?? 0}% / 中 ${exp.f0.midZonePct ?? 0}% / 高 ${exp.f0.femaleZonePct ?? 0}% | — | 男声<145 / 过渡145~175 / 女声>175 |
-| **声带振动** | 声门开商 H1−H2 | ${exp.weight.h1h2 != null ? exp.weight.h1h2.toFixed(1) + ' dB' : '未检出'} | ≤−1.2 偏紧；-0.5~3.5 舒展流动 | 带 F1 共振峰污染守卫 |
+| **声带振动** | 声门开商 H1−H2 | ${h12ValueStr} | ≤−1.2 偏紧；-0.5~3.5 舒展流动 | 带 F1 共振峰污染守卫 |
 | | 周期微扰 Jitter | ${exp.weight.jitter != null ? exp.weight.jitter.toFixed(2) + ' %' : '未测出'} | 语流 1.8 ~ 2.8 % | 连续语流不可与长音常模比 |
 | | 振幅扰动 Shimmer | ${exp.weight.shimmer != null ? exp.weight.shimmer.toFixed(2) + ' %' : '未测出'} | 连续口语 ≤ 8.0 % | 日常口语重音起伏自然偏高 |
 | | 谐噪比 HNR | ${exp.weight.hnr != null ? exp.weight.hnr.toFixed(1) + ' dB' : '未测出'} | ≥ 12.0 dB 清澈 | 自相关峰值归一化 |
@@ -191,19 +227,33 @@ ${exp.stamp ? `- 体感印章：${formatStampSummary(exp.stamp)}\n` : ''}
 | **声调控制** | 安全托底率 | ${exp.tone.floorSafeRatio != null ? exp.tone.floorSafeRatio + '%' : '未测出'} | 推荐 ≥ 85% | 托底线 ${exp.tone.floorTargetHz || 160} Hz 以上有声时间比 |
 | | 气泡音比率 | ${exp.tone.creakRatio != null ? (exp.tone.creakRatio * 100).toFixed(1) + '%' : '未测出'} | < 15 % | 降调到底部时的声门失锁 |
 ${exp.fricative.centroidHz != null ? `| **摩擦音** | 咝音重心 (/s/) | ${(exp.fricative.centroidHz / 1000).toFixed(2)} kHz | 6.0 ~ 8.5 kHz | 4kHz以上高频占优帧频谱重心 |\n` : ''}
+## 给外部 AI 的单次复盘提示
+- 请采用去病理化、禁止打分的温和方式解读；若上方记录包含「体感印章」或「样本条件受限」，请优先参考体感而不是孤立数字。
+- 重点回答：① 本次状态中最稳/可肯定的 **1 个亮点**；② 若想更舒服省力，当下最值得试的 **1 个轻柔微调小动作**。
 `;
 }
 
 /**
- * 生成多段合并对比 Markdown (docs/60 §3)
+ * 生成多段合并与长期阶段对比 Markdown (docs/60 §3)
  * @param {object[]} takes 录音记录数组
+ * @param {object[]} [selfChecks=[]] 近期每周主观自评记录（可选，最多附带近 4 条文字摘要）
  * @returns {string} Markdown
  */
-export function renderBatchMarkdown(takes) {
+export function renderBatchMarkdown(takes, selfChecks = []) {
   if (!takes || !takes.length) return '';
 
   const exportList = takes.map((t) => toExport(t)).sort((a, b) => a.ts - b.ts);
   const count = exportList.length;
+
+  const validExport = exportList.filter((e) => e.ok !== false);
+  const pool = validExport.length ? validExport : exportList;
+  const rangeStr = (vals, unit, digits = 0) => {
+    const nums = vals.filter((v) => v != null && Number.isFinite(v));
+    if (!nums.length) return '未测出';
+    const lo = Math.min(...nums).toFixed(digits);
+    const hi = Math.max(...nums).toFixed(digits);
+    return lo === hi ? `${lo}${unit}` : `${lo} ~ ${hi}${unit}`;
+  };
 
   // 构造可比性判定辅助
   function getComparisonTag(cur, idx, arr) {
@@ -219,38 +269,62 @@ export function renderBatchMarkdown(takes) {
   const tableRows = exportList.map((e, idx) => {
     const f0Str = e.f0.median ? `${Math.round(e.f0.median)} Hz` : '—';
     const spanStr = e.f0.spanSt != null ? `${e.f0.spanSt.toFixed(1)} st` : '—';
-    const h1h2Str = e.weight.h1h2 != null ? `${e.weight.h1h2.toFixed(1)} dB` : '—';
+    const h1h2Str = e.weight.h1h2 != null ? `${e.weight.h1h2.toFixed(1)} dB` : (e.h1h2GuardActive ? '避让' : '—');
     const deltaFStr = e.resonance.deltaF ? `${Math.round(e.resonance.deltaF)} Hz` : '—';
     const floorStr = e.tone.floorSafeRatio != null ? `${e.tone.floorSafeRatio}%` : '—';
     const compTag = getComparisonTag(e, idx, exportList);
 
-    return `| ${idx + 1} | ${e.tsLocal} | ${e.setName} | ${f0Str} | ${spanStr} | ${h1h2Str} | ${deltaFStr} | ${floorStr} | ${compTag} |`;
+    return `| ${idx + 1} | ${e.tsLocal} | ${e.setName}${e.ok === false ? ' *(受限)*' : ''} | ${f0Str} | ${spanStr} | ${h1h2Str} | ${deltaFStr} | ${floorStr} | ${compTag} |`;
   }).join('\n');
 
   // 构造各单段明细
   const detailsSections = exportList.map((e, idx) => {
-    return `### 第 ${idx + 1} 段 · ${e.tsLocal} · ${e.setName} (${e.durationSec != null ? e.durationSec.toFixed(1) + 's' : '—'})
+    return `### 第 ${idx + 1} 段 · ${e.tsLocal} · ${e.setName} (${e.durationSec != null ? e.durationSec.toFixed(1) + 's' : '—'})${e.ok === false ? ' · [样本受限仅供参考]' : ''}
 ${e.stamp ? `- 体感印章：${formatStampSummary(e.stamp)}\n` : ''}- 有效发声时长：${e.voicedSec != null ? e.voicedSec.toFixed(1) + ' 秒' : '—'}（占比 ${e.voicedPct != null ? e.voicedPct + '%' : '—'}）
 - 中位基频：${e.f0.median ? Math.round(e.f0.median) + ' Hz (' + pitchName(e.f0.median) + ')' : '—'} · 音高起伏：${e.f0.spanSt != null ? e.f0.spanSt.toFixed(1) + ' 半音' : '—'}
-- 轻音重 H1−H2：${e.weight.h1h2 != null ? e.weight.h1h2.toFixed(1) + ' dB' : '未检出'} · 共鸣间距 ΔF：${e.resonance.deltaF ? Math.round(e.resonance.deltaF) + ' Hz' : '未测出'}
+- 轻音重 H1−H2：${e.weight.h1h2 != null ? e.weight.h1h2.toFixed(1) + ' dB' : (e.h1h2GuardActive ? '已避让保护' : '未检出')} · 共鸣间距 ΔF：${e.resonance.deltaF ? Math.round(e.resonance.deltaF) + ' Hz' : '未测出'}
 - 周期微扰 Jitter：${e.weight.jitter != null ? e.weight.jitter.toFixed(2) + '%' : '—'} · 振幅扰动 Shimmer：${e.weight.shimmer != null ? e.weight.shimmer.toFixed(2) + '%' : '—'}
 ${e.fricative.centroidHz != null ? `- 咝音摩擦重心：${(e.fricative.centroidHz / 1000).toFixed(2)} kHz\n` : ''}`;
   }).join('\n---\n\n');
 
+  const sortedSc = Array.isArray(selfChecks) && selfChecks.length
+    ? [...selfChecks].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 4)
+    : [];
+  const scSection = sortedSc.length
+    ? `\n## 近期主观周自评参考（近 ${sortedSc.length} 次）\n` + sortedSc.map((sc) => {
+      const bits = [];
+      for (const q of SELF_CHECK_QUESTIONS) {
+        if (sc.answers?.[q.key]) bits.push(`${q.title.replace(/^\d+\.\s*/, '')}：${sc.answers[q.key]}`);
+      }
+      if (sc.note) bits.push(`周记：「${sc.note}」`);
+      return `- **${formatLocalTime(sc.ts)}** · ${sc.mood || '😌 平稳'}${bits.length ? ' — ' + bits.join('；') : ''}`;
+    }).join('\n') + '\n'
+    : '';
+
   return `<!-- qinglai-export v1 · format:batch · count:${count} · algoVersion:${ALGO_VERSION} · kbVersion:${KB_VERSION} -->
-# 电波日记 · 发声记录汇总 (${count} 段)
+# 电波日记 · 发声记录横向与长期趋势汇总 (${count} 段)
 
 > 说明：本文档包含 ${count} 次客观发声测量数据，按时间先后顺序排列。  
 > 口径速记：F0 为有声帧中位数；起伏为 P10–P90 半音跨度；ΔF 仅取 /i/ 帧（1000–1250 Hz）；H1−H2 负值偏紧、0 附近为轻音重；  
-> 比较原则：同素材同模式可直接比较数值差异；不同素材建议仅对比音重与共鸣趋势。
+> 比较原则：同素材同模式可直接比较数值差异；不同素材建议仅对比音重与共鸣趋势；标记 *(受限)* 的样本仅供参考。
+
+## 阶段趋势概览
+- **时间跨度**：${exportList[0].tsLocal} → ${exportList[count - 1].tsLocal}（共 ${count} 段，其中正常达标样本 ${validExport.length} 段）
+- **中位基频区间**：${rangeStr(pool.map((e) => e.f0.median), ' Hz', 0)} · **托底达成率区间**：${rangeStr(pool.map((e) => e.tone.floorSafeRatio), '%', 0)}
+- **声门轻重 (H1−H2) 区间**：${rangeStr(pool.map((e) => e.weight.h1h2), ' dB', 1)} · **共鸣间距 ΔF 区间**：${rangeStr(pool.map((e) => e.resonance.deltaF), ' Hz', 0)}
 
 ## 多次发声综合对比表
 | # | 记录时间 | 练习素材 | 中位 F0 | 音高起伏 | H1−H2 | 共鸣 ΔF | 托底率 | 可比性判定 |
 | :- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 ${tableRows}
-
+${scSection}
 ## 各段详细声学记录
 ${detailsSections}
+
+## 给外部 AI 的长期阶段复盘引导
+1. 请优先挑选表格中标记「同素材同模式」的记录做横向对比，区分真实发声习惯变化与单次采样波动；
+2. 对照各段的「体感印章」与上方「主观周自评」，判断在数据向稳定区间靠拢的同时，日常开口是否也更轻松自在；
+3. 请禁止打分与病理化评价，总结出 **1～2 条已经稳定建立的好习惯**，以及 **下一阶段 1 个顺其自然的温和微调重点**。
 `;
 }
 
@@ -404,12 +478,13 @@ export async function exportTakeMarkdown(take, { format = 'diary' } = {}) {
 /**
  * 快捷导出多条记录为合并 Markdown 文件
  * @param {object[]} takes
+ * @param {{ selfChecks?: object[] }} [opts]
  * @returns {Promise<object>}
  */
-export async function exportBatchMarkdown(takes) {
+export async function exportBatchMarkdown(takes, { selfChecks = [] } = {}) {
   if (!takes || !takes.length) throw new Error('请至少选择一条记录进行导出。');
   const dateStr = formatFileStamp(Date.now());
   const fileName = `电波日记_${dateStr}_批量汇总(${takes.length}段).md`;
-  const mdContent = renderBatchMarkdown(takes);
+  const mdContent = renderBatchMarkdown(takes, selfChecks);
   return saveMarkdownFile(mdContent, fileName);
 }

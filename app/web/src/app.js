@@ -28,4 +28,17 @@ for (const [id, Comp] of mounts) {
 
 if (typeof window !== 'undefined') {
   window.__ui = ui;
+
+  // 仅在独立 Web PWA 环境（非 Android 离线壳）注册静态资源离线缓存，支持 iOS/桌面端断网二次打开
+  const isAndroidShell = Boolean(window.DshFile) || window.location.hostname === 'appassets.local';
+  const isSecureContextForSw =
+    window.location.protocol === 'https:'
+    || window.location.hostname === 'localhost'
+    || window.location.hostname === '127.0.0.1';
+
+  if (!isAndroidShell && isSecureContextForSw && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+    });
+  }
 }

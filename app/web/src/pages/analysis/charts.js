@@ -4,7 +4,7 @@
    =========================================================== */
 
 import { pitchName } from '../../core/index.js';
-import { renderConsultationMarkdown } from '../../core/export.js';
+import { renderConsultationMarkdown, renderAiPrimerPrompt } from '../../core/export.js';
 
 const css = (k, fb) => (typeof window !== 'undefined' && window.cssVar ? window.cssVar(k, fb) : fb);
 
@@ -1164,31 +1164,41 @@ export function paintVowelSpace(canvas, ns) {
 }
 
 /**
- * 构建 AI 深度问诊提示词 / 简要复盘文案
+ * 构建 AI 深度问诊提示词 / 简要复盘文案 / 前导知识包
  */
-export function buildAiPrompt(take, ns, mode = 'rich') {
+export function buildAiPrompt(take, ns, mode = 'rich', opts = {}) {
+  if (mode === 'primer') {
+    return renderAiPrimerPrompt({ floorTargetHz: opts.floorTargetHz || ns?.floorTargetHz || 160 });
+  }
   if (!take || !ns) return '';
   if (mode === 'rich') {
     return renderConsultationMarkdown(take);
   }
   const f0Str = ns.medianF0 ? `${Math.round(ns.medianF0)} Hz (${pitchName(ns.medianF0)})` : '未测出';
-  const h12 = ns.h1h2 != null ? `${fmtSigned(ns.h1h2)} dB` : '未测出';
+  const h12 = ns.h1h2 != null
+    ? `${fmtSigned(ns.h1h2)} dB（${ns.spectralStatus || '已测'}）`
+    : (ns.h1h2GuardActive ? '已开启 F1 避让保护（干净帧不足）' : '未测出');
   const h15 = ns.h1h5Db != null ? `${fmtSigned(ns.h1h5Db)} dB` : '—';
   const tilt = ns.spectralTiltDbOct != null ? `${fmtSigned(ns.spectralTiltDbOct)} dB/oct` : '—';
   const dfVal = ns.deltaF ?? ns.effDeltaF;
   const df = dfVal != null ? `${Math.round(dfVal)} Hz` : '—';
   const f123 = [ns.f1, ns.f2, ns.f3].map((v) => (v != null ? Math.round(v) : '—')).join(' / ');
+  const stampThroat = Array.isArray(take.stamp?.throats) && take.stamp.throats.length
+    ? take.stamp.throats.join('、')
+    : (take.stamp?.throat || '');
   return [
-    '我在用「电波日记 v2.0」做性别肯定嗓音练习，请用温和非恐吓、基于体感的方式帮我复盘这次数据：',
+    '电波日记 · 单次轻复盘（请温和、不打分、结合身体体感回复）：',
     `- 练习内容：${take.setName || '自由表达'}（有声时长 ${ns.voicedSec != null ? ns.voicedSec.toFixed(1) : '—'} 秒）`,
-    `- 音高基准：中位音高 ${f0Str}，音高起伏 ${ns.spanSt != null ? ns.spanSt.toFixed(1) : '—'} st，托底达成率 ${ns.floorSafeRatio ?? '—'}%`,
+    take.ok === false ? `- 样本条件受限：${take.reasons?.length ? take.reasons.join('；') : '录音较短或偏轻'}（数值仅供参考）` : '',
+    `- 音高基准：中位 ${f0Str}，起伏 ${ns.spanSt != null ? ns.spanSt.toFixed(1) : '—'} st，托底达成率 ${ns.floorSafeRatio ?? '—'}%`,
     `- 谐波与音色象限：${ns.quadrant?.summaryLabel || '—'}`,
-    `- 声门轻重 (H1-H2)：${h12}（${ns.spectralStatus || '—'}）`,
+    `- 声门轻重 (H1-H2)：${h12}`,
     `- 共振峰 F1/F2/F3 与间距：${f123} Hz · ΔF ${df}；H1-H5 ${h15}，频谱倾斜 ${tilt}`,
+    ns.sibilanceCentroid != null ? `- 咝音 /s/ 重心：${(ns.sibilanceCentroid / 1000).toFixed(2)} kHz` : '',
     ns.bottleneckHint ? `- 综合声学排查：${ns.bottleneckHint}` : '',
     ns.toneSummary ? `- 声调提醒：${ns.toneSummary}` : '',
-    take.stamp ? `- 我的主观体感：心情「${take.stamp.mood || ''}」喉部「${take.stamp.throat || ''}」${take.stamp.note ? ' 备注：' + take.stamp.note : ''}` : '',
-    '请给我 1 个当前做得最好的地方 + 1 个最温和不费力的微调动作。',
+    take.stamp ? `- 主观体感：心情「${take.stamp.mood || ''}」${stampThroat ? ' · 喉部「' + stampThroat + '」' : ''}${take.stamp.note ? ' · 备注：' + take.stamp.note : ''}` : '',
+    '请结合体感给我：① 1 个当前最稳的地方 + ② 1 个不需要用力硬顶的轻巧微调动作（150 字以内）。',
   ].filter(Boolean).join('\n');
 }
 

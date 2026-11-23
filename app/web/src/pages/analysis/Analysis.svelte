@@ -227,11 +227,13 @@
   }
 
   async function copyAiText(mode) {
-    if (!take || !ns) return;
-    const text = buildAiPrompt(take, ns, mode);
+    if (mode !== 'primer' && (!take || !ns)) return;
+    const text = buildAiPrompt(take, ns, mode, { floorTargetHz: settings.floorTargetHz });
     try {
       await navigator.clipboard.writeText(text);
-      showMsg(mode === 'rich' ? '已复制 AI 深度问诊提示词，去发给 AI 聊聊吧' : '已复制简洁复盘数据');
+      if (mode === 'primer') showMsg('已复制 AI 知识前导包，开新对话先发一次即可');
+      else if (mode === 'rich') showMsg('已复制 AI 单次深度咨询包，去发给 AI 聊聊吧');
+      else showMsg('已复制单次轻复盘数据');
     } catch {
       showMsg('当前环境不支持自动剪贴板，请改用导出 Markdown');
     }
@@ -988,6 +990,13 @@
           </svg>
           <span>复制简要数据</span>
         </button>
+        <button type="button" class="action-btn" onclick={() => copyAiText('primer')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span>复制 AI 知识前导</span>
+        </button>
         <button type="button" class="action-btn" onclick={handleExportMd}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -997,7 +1006,7 @@
           </svg>
           <span>导出记录 (.md)</span>
         </button>
-        <button type="button" class="action-btn action-span2" onclick={handleExportWav} disabled={!take.blob}>
+        <button type="button" class="action-btn" onclick={handleExportWav} disabled={!take.blob}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>

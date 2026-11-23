@@ -1,7 +1,7 @@
 <script>
   import { onMount, tick } from 'svelte';
   import { normalizeStats, pitchName } from '../../core/index.js';
-  import { exportBatchMarkdown } from '../../core/export.js';
+  import { exportBatchMarkdown, renderBatchMarkdown } from '../../core/export.js';
   import { TakeStore, subscribeTakes } from '../../store/takes.js';
   import { SelfCheckStore, subscribeSelfChecks } from '../../store/selfCheck.js';
   import { ui } from '../../state/ui.svelte.js';
@@ -210,10 +210,27 @@
       showMsg('请至少勾选 2 条录音进行横向对比');
       return;
     }
-    await exportBatchMarkdown(chosen);
-    showMsg(`已导出 ${chosen.length} 条对比手账给 AI`);
+    await exportBatchMarkdown(chosen, { selfChecks: selfChecks.slice(0, 4) });
+    showMsg(`已导出 ${chosen.length} 条长期对比手账 (.md)`);
     batchMode = false;
     selectedIds = new Set();
+  }
+
+  async function handleBatchCopyAi() {
+    const chosen = takes.filter((t) => selectedIds.has(t.id));
+    if (chosen.length < 2) {
+      showMsg('请至少勾选 2 条录音再复制对比给 AI');
+      return;
+    }
+    const md = renderBatchMarkdown(chosen, selfChecks.slice(0, 4));
+    try {
+      await navigator.clipboard.writeText(md);
+      showMsg(`已复制 ${chosen.length} 条对比与趋势摘要给 AI`);
+      batchMode = false;
+      selectedIds = new Set();
+    } catch {
+      showMsg('当前环境不支持自动剪贴板，请改用「导出对比 (.md)」');
+    }
   }
 
   async function handleBatchDelete() {
@@ -411,7 +428,15 @@
             {allVisibleSelected ? '取消全选' : '全选'}
           </button>
         </div>
-        <div class="row-gap-sm">
+        <div class="row-gap-sm batch-actions">
+          <button
+            type="button"
+            class="batch-btn btn-soft"
+            disabled={selectedIds.size < 2}
+            onclick={handleBatchCopyAi}
+          >
+            复制给 AI
+          </button>
           <button
             type="button"
             class="batch-btn btn-sky"
@@ -753,6 +778,10 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+  }
+  .batch-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   .batch-cnt {
     font-size: var(--fs-13);
