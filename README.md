@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/xling001/radio-diary/releases/tag/v2.1.5"><img src="https://img.shields.io/badge/Release-v2.1.5-5BCEFA.svg" alt="Release v2.1.5" /></a>
+  <a href="https://github.com/xling001/radio-diary/releases/tag/v2.1.6"><img src="https://img.shields.io/badge/Release-v2.1.6-5BCEFA.svg" alt="Release v2.1.6" /></a>
   <a href="https://xling001.github.io/radio-diary/"><img src="https://img.shields.io/badge/Web%20PWA-iOS%20%26%20Desktop-7BC2BC.svg" alt="Web PWA Online" /></a>
   <img src="https://img.shields.io/badge/Focus-MtF%20%2F%20Transfemme-F5A9B8.svg" alt="MtF Focused" />
   <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-7BB4D8.svg" alt="100% Offline" />
@@ -14,7 +14,7 @@
 
 # 电波日记 MtF 版 (Radio Diary · MtF Edition)
 
-> **面向跨性别女性（MtF）的纯本地嗓音练习手账 · v2.1.5**  
+> **面向跨性别女性（MtF）的纯本地嗓音练习手账 · v2.1.6**  
 > 零联网上传 · 去病理化表达 · 离线声学反馈 + 练习手账 + 外部 AI 导出联动  
 >
 > 🌐 **在线网页版（iOS Safari / 桌面端免安装即用）**：👉 **[https://xling001.github.io/radio-diary/](https://xling001.github.io/radio-diary/)**（同样纯本地浏览器计算，iOS Safari 可「添加到主屏幕」作为桌面 App 使用）
@@ -74,7 +74,7 @@
 
 ### 1. 三种练习模式 + 自由照镜 + 音频导入
 - **自由说**：自然聊天或朗读任意文本，实时观察音高曲线、专属安全托底线（可在 150–165 Hz 间调节）与发声轻重/明暗提示。
-- **读素材**：搭配内置分场景练习句库与自定义素材逐句跟练。
+- **读素材**：搭配内置分场景练习句库与自定义素材，支持逐句跟练与无注释瀑布流连读双模式（含两档柔和自动滚动）。
 - **做测试**：针对持续元音（如 `/i/`、`/u/`）与清擦音 `/s/` 的基准测量，观察前腔共鸣间距 $\Delta F$ 与发音状态。
 - **自由照镜模式**：关闭「记入手帐」开关即可随时只看曲线与即时反馈，不占手账空间。
 - **本地音频导入**：支持导入手机或电脑中的常见录音文件，复用同一套离线声学分析流水线生成报告。
@@ -94,7 +94,7 @@
 
 ## 📦 下载与使用
 
-- **Android 用户（推荐国内分流）**：可直接在 **[蓝奏云高速分流网盘](https://wwbhg.lanzouv.com/b0o0ji4bc)**（提取密码：`1cvt`）免登录极速下载安装包；亦可在 **[GitHub Releases (v2.1.5)](https://github.com/xling001/radio-diary/releases)** 页面下载（包名保留 `com.transvoice.voice`，支持从旧版「清籁手帐」平滑覆盖升级并保留本地数据）。
+- **Android 用户（推荐国内分流）**：可直接在 **[蓝奏云高速分流网盘](https://wwbhg.lanzouv.com/b0o0ji4bc)**（提取密码：`1cvt`）免登录极速下载安装包；亦可在 **[GitHub Releases (v2.1.6)](https://github.com/xling001/radio-diary/releases)** 页面下载（包名保留 `com.transvoice.voice`，支持从旧版「清籁手帐」平滑覆盖升级并保留本地数据）。
 - **iOS / 桌面端与试用体验**：无需安装，直接用 Safari / Chrome / Edge 打开在线网页版 👉 **[https://xling001.github.io/radio-diary/](https://xling001.github.io/radio-diary/)**，所有录音和计算同样只在本地浏览器运行；iOS 用户点浏览器底部分享键「添加到主屏幕」即可接近原生离线应用体验（也可一并了解优秀的姊妹开源在线工具 [Koenami](https://github.com/transnavi/koenami)）。
 - **自编译开发者**：参见下方目录与本地构建步骤。
 
@@ -171,7 +171,7 @@ node .\app\scripts\test-audit-round.mjs
 ```powershell
 # 自动触发 Vite build，并通过 aapt2 + javac + d8 + zipalign + apksigner 打包
 .\app\scripts\build-apk.ps1
-# 输出位于：app\build\radio-diary-v2.1.5.apk
+# 输出位于：app\build\radio-diary-v2.1.6.apk
 ```
 
 ---

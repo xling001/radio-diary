@@ -15,6 +15,7 @@
   import { ui } from '../../state/ui.svelte.js';
   import { settings } from '../../state/settings.svelte.js';
   import { confirmDlg } from '../../ui/dialog.js';
+  import { acquireScreenWake, releaseScreenWake } from '../../ui/wakeLock.js';
   import Empty from '../../ui/Empty.svelte';
   import MoodStampModal from './MoodStampModal.svelte';
   import { audioSession } from '../record/audioSession.svelte.js';
@@ -41,6 +42,9 @@
   let playSec = $state(0);
   let audioDuration = $state(0);
   let seeking = $state(false);
+  let editingTitle = $state(false);
+  let titleDraft = $state('');
+  let titleInputEl = $state(null);
 
   const ns = $derived(take ? normalizeStats(take) : null);
   const effectiveDuration = $derived(
@@ -60,9 +64,49 @@
       audioUrl = null;
     }
     isPlaying = false;
+    releaseScreenWake('playback');
     playSec = 0;
     audioDuration = 0;
     seeking = false;
+  }
+
+  function defaultTakeName(t) {
+    if (t?.origSetName) return t.origSetName;
+    if (t?.mode === 'import') return '导入音频';
+    if (t?.mode === 'script') return '发声练习';
+    return '自由表达';
+  }
+
+  function startEditTitle() {
+    if (!take) return;
+    titleDraft = take.setName || defaultTakeName(take);
+    editingTitle = true;
+    requestAnimationFrame(() => {
+      if (titleInputEl) {
+        titleInputEl.focus();
+        titleInputEl.select();
+      }
+    });
+  }
+
+  function cancelEditTitle() {
+    editingTitle = false;
+    titleDraft = '';
+  }
+
+  async function saveTitle() {
+    if (!take) {
+      editingTitle = false;
+      return;
+    }
+    const nextName = titleDraft.trim() || defaultTakeName(take);
+    const origSetName = take.origSetName || take.setName || defaultTakeName(take);
+    editingTitle = false;
+    if (nextName === take.setName && take.origSetName === origSetName) return;
+    const updated = { ...take, setName: nextName, origSetName };
+    take = updated;
+    await TakeStore.put(updated);
+    showMsg('记录名称已更新');
   }
 
   async function loadTargetTake() {
@@ -79,7 +123,14 @@
         const list = await TakeStore.all();
         loaded = list[0] || null;
       }
+      if (loaded && take && loaded.id === take.id && (audioUrl || !loaded.blob)) {
+        take = loaded;
+        editingTitle = false;
+        audioSession.selectedTakeId = loaded.id;
+        return;
+      }
       revokeAudio();
+      editingTitle = false;
       take = loaded;
       if (loaded) {
         const fallbackDur = Number(
@@ -203,10 +254,17 @@
         playSec = 0;
         audioEl.currentTime = 0;
       }
-      audioEl.play().then(() => { isPlaying = true; }).catch(() => showMsg('音频播放受限'));
+      audioEl.play().then(() => {
+        isPlaying = true;
+        acquireScreenWake('playback');
+      }).catch(() => {
+        releaseScreenWake('playback');
+        showMsg('音频播放受限');
+      });
     } else {
       audioEl.pause();
       isPlaying = false;
+      releaseScreenWake('playback');
     }
   }
 
@@ -577,48 +635,87 @@
 
     <!-- 顶部记录头：单行操作栏 + 紧凑音频播放进度条 -->
     <div class="take-meta-bar">
-      <div class="meta-top-row">
-        <div class="meta-left">
-          <strong class="meta-title">{take.setName || '自由表达'}</strong>
-          <span class="meta-time">
-            {formatDateTime(take.ts)} · {(!ns.voicedSec || ns.voicedSec <= 0)
-              ? (ns.sibilanceCentroid != null ? '清擦音 [s] 样本' : '未测到稳定浊音')
-              : ((effectiveDuration || take.durationSec)
-                ? `全长 ${fmtNum(effectiveDuration || take.durationSec, 1, 's')}（有声 ${fmtNum(ns.voicedSec, 1, 's')}）`
-                : `${fmtNum(ns.voicedSec, 1, 's')} 有声`)}
-          </span>
-        </div>
-        <div class="meta-btns">
-          <button type="button" class="mini-pill" onclick={togglePlay} disabled={!audioUrl}>
-            {#if isPlaying}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <rect x="6" y="5" width="4" height="14" rx="1"></rect>
-                <rect x="14" y="5" width="4" height="14" rx="1"></rect>
+      {#if editingTitle}
+        <form
+          class="meta-rename-row"
+          onsubmit={(e) => {
+            e.preventDefault();
+            saveTitle();
+          }}
+        >
+          <input
+            bind:this={titleInputEl}
+            type="text"
+            class="meta-rename-input"
+            bind:value={titleDraft}
+            maxlength="48"
+            placeholder="输入名称，如《歌名》"
+            aria-label="记录名称"
+            onkeydown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelEditTitle();
+              }
+            }}
+          />
+          <button type="submit" class="mini-pill pill-save">保存</button>
+          <button type="button" class="mini-pill" onclick={cancelEditTitle}>取消</button>
+        </form>
+      {:else}
+        <div class="meta-top-row">
+          <div class="meta-left">
+            <button
+              type="button"
+              class="meta-title-btn"
+              onclick={startEditTitle}
+              aria-label="修改记录名称"
+            >
+              <strong class="meta-title">{take.setName || '自由表达'}</strong>
+              <svg class="meta-edit-ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
-              <span>暂停</span>
-            {:else}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <polygon points="6 4 20 12 6 20 6 4"></polygon>
-              </svg>
-              <span>回放</span>
-            {/if}
-          </button>
-          {#if !parsedStamp}
-            <button type="button" class="mini-pill" onclick={() => { stampOpen = true; }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                <line x1="7" y1="7" x2="7.01" y2="7"></line>
-              </svg>
-              <span>贴印章</span>
             </button>
-          {/if}
-          <button type="button" class="mini-pill icon-only {take.fav ? 'pill-fav' : ''}" onclick={toggleFav} aria-label="收藏">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill={take.fav ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-          </button>
+            <span class="meta-time">
+              {formatDateTime(take.ts)} · {(!ns.voicedSec || ns.voicedSec <= 0)
+                ? (ns.sibilanceCentroid != null ? '清擦音 [s] 样本' : '未测到稳定浊音')
+                : ((effectiveDuration || take.durationSec)
+                  ? `全长 ${fmtNum(effectiveDuration || take.durationSec, 1, 's')}（有声 ${fmtNum(ns.voicedSec, 1, 's')}）`
+                  : `${fmtNum(ns.voicedSec, 1, 's')} 有声`)}
+            </span>
+          </div>
+          <div class="meta-btns">
+            <button type="button" class="mini-pill" onclick={togglePlay} disabled={!audioUrl}>
+              {#if isPlaying}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <rect x="6" y="5" width="4" height="14" rx="1"></rect>
+                  <rect x="14" y="5" width="4" height="14" rx="1"></rect>
+                </svg>
+                <span>暂停</span>
+              {:else}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                </svg>
+                <span>回放</span>
+              {/if}
+            </button>
+            {#if !parsedStamp}
+              <button type="button" class="mini-pill" onclick={() => { stampOpen = true; }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+                <span>贴印章</span>
+              </button>
+            {/if}
+            <button type="button" class="mini-pill icon-only {take.fav ? 'pill-fav' : ''}" onclick={toggleFav} aria-label="收藏">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill={take.fav ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      {/if}
 
       {#if audioUrl}
         <div class="meta-audio-bar">
@@ -651,8 +748,8 @@
         onloadedmetadata={syncAudioDuration}
         ondurationchange={syncAudioDuration}
         ontimeupdate={handleTimeUpdate}
-        onended={() => { isPlaying = false; playSec = 0; }}
-        onpause={() => { isPlaying = false; }}
+        onended={() => { isPlaying = false; playSec = 0; releaseScreenWake('playback'); }}
+        onpause={() => { isPlaying = false; releaseScreenWake('playback'); }}
         class="sr-hidden"
       ></audio>
     {/if}
@@ -1067,6 +1164,31 @@
     flex-direction: column;
     min-width: 0;
   }
+  .meta-title-btn {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink-1);
+    border-radius: var(--radius-xs);
+  }
+  .meta-edit-ico {
+    flex-shrink: 0;
+    color: var(--ink-3);
+    opacity: 0.65;
+    transition: opacity 0.14s ease;
+  }
+  .meta-title-btn:hover .meta-edit-ico,
+  .meta-title-btn:focus-visible .meta-edit-ico {
+    opacity: 1;
+    color: var(--crayon-coral-ink);
+  }
   .meta-title {
     font-size: var(--fs-14);
     color: var(--ink-1);
@@ -1077,6 +1199,27 @@
   .meta-time {
     font-size: var(--fs-11);
     color: var(--ink-3);
+  }
+  .meta-rename-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .meta-rename-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border-soft);
+    background: var(--paper-3);
+    color: var(--ink-1);
+    font-size: var(--fs-13);
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    outline: none;
+  }
+  .meta-rename-input:focus {
+    border-color: var(--crayon-coral);
   }
 
   .meta-btns {
@@ -1167,6 +1310,11 @@
     background: var(--crayon-amber-soft);
     color: var(--crayon-amber-ink);
     border-color: var(--crayon-amber);
+  }
+  .mini-pill.pill-save {
+    background: var(--crayon-coral-soft);
+    color: var(--crayon-coral-ink);
+    border-color: var(--crayon-coral);
   }
 
   /* 体感印章展示卡（自然微浮凸手帐印泥章质感） */

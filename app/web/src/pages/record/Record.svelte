@@ -6,11 +6,35 @@
   import { settings } from '../../state/settings.svelte.js';
   import { audioSession } from './audioSession.svelte.js';
   import { paintLivePitch } from './charts.js';
+  import { acquireScreenWake, releaseScreenWake } from '../../ui/wakeLock.js';
+
+  const SCRIPT_VIEW_KEY = 'tv.scriptViewMode';
+  const FLOW_SPEED_KEY = 'tv.flowSpeed';
+  const FLOW_SPEED_PX = { slow: 22, medium: 36 };
+
+  function loadStoredPref(key, allowed, fallback) {
+    try {
+      const val = localStorage.getItem(key);
+      return allowed.includes(val) ? val : fallback;
+    } catch {
+      return fallback;
+    }
+  }
 
   let canvasEl = $state(null);
   let fileInputEl = $state(null);
   let activeSet = $state(LibraryStore.getSet(audioSession.activeSetId));
   let categories = $state(getAllCategories());
+  let scriptViewMode = $state(typeof window !== 'undefined' ? loadStoredPref(SCRIPT_VIEW_KEY, ['step', 'flow'], 'step') : 'step');
+  let flowSpeed = $state(typeof window !== 'undefined' ? loadStoredPref(FLOW_SPEED_KEY, ['slow', 'medium'], 'slow') : 'slow');
+  let autoScrolling = $state(false);
+  let flowScrolled = $state(false);
+  let flowScrollEl = $state(null);
+
+  let flowRafId = 0;
+  let flowLastTs = 0;
+  let flowPos = 0;
+  let lastFlowSetId = null;
 
   function refreshLibraryView() {
     audioSession.refreshSet();
@@ -62,6 +86,7 @@
 
     return () => {
       unsub();
+      stopAutoScroll();
       audioSession.setFramePaintHook(null);
       window.removeEventListener('tv-theme-change', onTheme);
       window.removeEventListener('resize', repaintCanvas);
@@ -146,10 +171,150 @@
 
   const promptTokens = $derived(tokenizePromptText(currentLineObj.text));
 
+  const flowLines = $derived.by(() => {
+    const lines = activeSet?.lines || [];
+    return lines
+      .map((raw) => {
+        const text = (raw && typeof raw === 'object') ? String(raw.text || '') : String(raw || '');
+        return { text, tokens: tokenizePromptText(text) };
+      })
+      .filter((item) => item.text.trim().length > 0);
+  });
+
+  function setScriptViewMode(mode) {
+    if (mode !== 'step' && mode !== 'flow') return;
+    if (mode !== 'flow') stopAutoScroll();
+    scriptViewMode = mode;
+    try { localStorage.setItem(SCRIPT_VIEW_KEY, mode); } catch {}
+  }
+
+  function setFlowSpeed(speed) {
+    if (speed !== 'slow' && speed !== 'medium') return;
+    flowSpeed = speed;
+    try { localStorage.setItem(FLOW_SPEED_KEY, speed); } catch {}
+  }
+
+  function stopAutoScroll() {
+    if (flowRafId) {
+      cancelAnimationFrame(flowRafId);
+      flowRafId = 0;
+    }
+    if (autoScrolling) {
+      autoScrolling = false;
+    }
+    releaseScreenWake('autoscroll');
+  }
+
+  function tickAutoScroll(ts) {
+    if (!autoScrolling || !flowScrollEl) {
+      stopAutoScroll();
+      return;
+    }
+    const maxScroll = Math.max(0, flowScrollEl.scrollHeight - flowScrollEl.clientHeight);
+    if (maxScroll <= 1) {
+      stopAutoScroll();
+      return;
+    }
+    const dt = Math.min(0.1, Math.max(0, (ts - flowLastTs) / 1000));
+    flowLastTs = ts;
+    const speed = FLOW_SPEED_PX[flowSpeed] || FLOW_SPEED_PX.slow;
+    flowPos = Math.min(maxScroll, flowPos + speed * dt);
+    flowScrollEl.scrollTop = flowPos;
+    flowScrolled = flowPos > 10;
+    if (flowPos >= maxScroll - 0.5) {
+      stopAutoScroll();
+      return;
+    }
+    flowRafId = requestAnimationFrame(tickAutoScroll);
+  }
+
+  function startAutoScroll() {
+    if (!flowScrollEl) return;
+    const maxScroll = Math.max(0, flowScrollEl.scrollHeight - flowScrollEl.clientHeight);
+    if (maxScroll <= 1) {
+      if (typeof window !== 'undefined' && typeof window.showNotice === 'function') {
+        window.showNotice('当前素材已完整展示，无需滚动');
+      }
+      return;
+    }
+    if (flowScrollEl.scrollTop >= maxScroll - 2) {
+      flowScrollEl.scrollTop = 0;
+      flowPos = 0;
+      flowScrolled = false;
+    } else {
+      flowPos = flowScrollEl.scrollTop;
+    }
+    autoScrolling = true;
+    acquireScreenWake('autoscroll');
+    flowLastTs = performance.now();
+    flowRafId = requestAnimationFrame(tickAutoScroll);
+  }
+
+  function toggleAutoScroll() {
+    if (autoScrolling) {
+      stopAutoScroll();
+    } else {
+      startAutoScroll();
+    }
+  }
+
+  function resetFlowToTop() {
+    stopAutoScroll();
+    if (flowScrollEl) {
+      flowScrollEl.scrollTop = 0;
+    }
+    flowPos = 0;
+    flowScrolled = false;
+  }
+
+  function handleFlowManualInterrupt() {
+    if (autoScrolling) {
+      stopAutoScroll();
+    }
+  }
+
+  function handleFlowScroll() {
+    if (!flowScrollEl) return;
+    flowScrolled = flowScrollEl.scrollTop > 10;
+    if (!autoScrolling) {
+      flowPos = flowScrollEl.scrollTop;
+    }
+  }
+
+  $effect(() => {
+    const el = flowScrollEl;
+    if (!el) return;
+    el.addEventListener('pointerdown', handleFlowManualInterrupt, { passive: true });
+    el.addEventListener('touchstart', handleFlowManualInterrupt, { passive: true });
+    el.addEventListener('wheel', handleFlowManualInterrupt, { passive: true });
+    return () => {
+      el.removeEventListener('pointerdown', handleFlowManualInterrupt);
+      el.removeEventListener('touchstart', handleFlowManualInterrupt);
+      el.removeEventListener('wheel', handleFlowManualInterrupt);
+    };
+  });
+
   $effect(() => {
     const _mode = audioSession.mode;
     const _cid = audioSession.activeCheckupId;
+    if (_mode !== 'script') {
+      stopAutoScroll();
+    }
     repaintCanvas();
+  });
+
+  $effect(() => {
+    const sid = activeSet?.id || null;
+    const vmode = scriptViewMode;
+    if (sid !== lastFlowSetId) {
+      lastFlowSetId = sid;
+      stopAutoScroll();
+      if (flowScrollEl) flowScrollEl.scrollTop = 0;
+      flowPos = 0;
+      flowScrolled = false;
+    } else if (vmode !== 'flow') {
+      stopAutoScroll();
+    }
   });
 
   async function onFilePicked(e) {
@@ -214,48 +379,126 @@
         </button>
       </div>
 
-      {#if activeSet.tags && activeSet.tags.length}
+      <div class="script-subbar">
         <div class="tag-row">
-          {#each activeSet.tags as tag}
-            <span class="tag-chip">#{tag}</span>
-          {/each}
+          {#if activeSet.tags && activeSet.tags.length}
+            {#each activeSet.tags as tag}
+              <span class="tag-chip">#{tag}</span>
+            {/each}
+          {:else}
+            <span class="tag-chip tnum">{activeSet.lines.length} 句</span>
+          {/if}
         </div>
-      {/if}
+        <div class="view-seg" role="group" aria-label="素材阅读模式">
+          <button
+            type="button"
+            class="view-seg-btn {scriptViewMode === 'step' ? 'active' : ''}"
+            aria-pressed={scriptViewMode === 'step'}
+            onclick={() => setScriptViewMode('step')}
+          >
+            逐句
+          </button>
+          <button
+            type="button"
+            class="view-seg-btn {scriptViewMode === 'flow' ? 'active' : ''}"
+            aria-pressed={scriptViewMode === 'flow'}
+            onclick={() => setScriptViewMode('flow')}
+          >
+            瀑布流
+          </button>
+        </div>
+      </div>
 
-      <div class="prompt-box">
-        {#if activeSet.tip}
-          <div class="prompt-tip">{activeSet.tip}</div>
+      <div class="prompt-box {scriptViewMode === 'flow' ? 'prompt-box-flow' : ''}">
+        {#if scriptViewMode === 'step'}
+          {#if activeSet.tip}
+            <div class="prompt-tip">{activeSet.tip}</div>
+          {/if}
+          {#if currentLineObj.cue}
+            <div class="prompt-cue-pill">{currentLineObj.cue}</div>
+          {/if}
+          <div class="prompt-line">
+            {#each promptTokens as tk}
+              {#if tk.kind === 'text'}{tk.value}{:else if tk.kind === 'pause'}<span class="pm-pause" aria-label="轻停顿">{tk.value}</span>{:else if tk.kind === 'breath'}<span class="pm-breath">{tk.value}</span>{:else if tk.kind === 'up'}<span class="pm-up" aria-label="语调微扬">{tk.value}</span>{:else if tk.kind === 'down'}<span class="pm-down" aria-label="语调轻落">{tk.value}</span>{/if}
+            {/each}
+          </div>
+          {#if currentLineObj.note}
+            <div class="prompt-note">{currentLineObj.note}</div>
+          {/if}
+          <div class="prompt-nav">
+            <button
+              type="button"
+              class="mini-nav-btn"
+              onclick={() => audioSession.prevLine(activeSet.lines.length)}
+            >
+              ← 上一句
+            </button>
+            <span class="tnum prompt-idx">
+              {(audioSession.lineIdx % activeSet.lines.length) + 1} / {activeSet.lines.length}
+            </span>
+            <button
+              type="button"
+              class="mini-nav-btn"
+              onclick={() => audioSession.nextLine(activeSet.lines.length)}
+            >
+              下一句 →
+            </button>
+          </div>
+        {:else}
+          <div class="flow-stage">
+            <div
+              bind:this={flowScrollEl}
+              class="flow-viewport"
+              role="region"
+              aria-label="素材朗读瀑布流"
+              onscroll={handleFlowScroll}
+            >
+              {#each flowLines as item}
+                <p class="flow-para">
+                  {#each item.tokens as tk}
+                    {#if tk.kind === 'text'}{tk.value}{:else if tk.kind === 'pause'}<span class="pm-pause" aria-label="轻停顿">{tk.value}</span>{:else if tk.kind === 'breath'}<span class="pm-breath">{tk.value}</span>{:else if tk.kind === 'up'}<span class="pm-up" aria-label="语调微扬">{tk.value}</span>{:else if tk.kind === 'down'}<span class="pm-down" aria-label="语调轻落">{tk.value}</span>{/if}
+                  {/each}
+                </p>
+              {/each}
+            </div>
+          </div>
+          <div class="flow-controls">
+            <button
+              type="button"
+              class="mini-nav-btn flow-play-btn {autoScrolling ? 'is-running' : ''}"
+              aria-pressed={autoScrolling}
+              onclick={toggleAutoScroll}
+            >
+              {autoScrolling ? '⏸ 暂停滚动' : '▶ 自动滚动'}
+            </button>
+            <div class="flow-speed-seg" role="group" aria-label="自动滚动速度">
+              <button
+                type="button"
+                class="flow-speed-btn {flowSpeed === 'slow' ? 'active' : ''}"
+                aria-pressed={flowSpeed === 'slow'}
+                onclick={() => setFlowSpeed('slow')}
+              >
+                慢速
+              </button>
+              <button
+                type="button"
+                class="flow-speed-btn {flowSpeed === 'medium' ? 'active' : ''}"
+                aria-pressed={flowSpeed === 'medium'}
+                onclick={() => setFlowSpeed('medium')}
+              >
+                适中
+              </button>
+            </div>
+            <button
+              type="button"
+              class="mini-nav-btn"
+              onclick={resetFlowToTop}
+              disabled={!flowScrolled && !autoScrolling}
+            >
+              ↺ 回顶
+            </button>
+          </div>
         {/if}
-        {#if currentLineObj.cue}
-          <div class="prompt-cue-pill">{currentLineObj.cue}</div>
-        {/if}
-        <div class="prompt-line">
-          {#each promptTokens as tk}
-            {#if tk.kind === 'text'}{tk.value}{:else if tk.kind === 'pause'}<span class="pm-pause" aria-label="轻停顿">{tk.value}</span>{:else if tk.kind === 'breath'}<span class="pm-breath">{tk.value}</span>{:else if tk.kind === 'up'}<span class="pm-up" aria-label="语调微扬">{tk.value}</span>{:else if tk.kind === 'down'}<span class="pm-down" aria-label="语调轻落">{tk.value}</span>{/if}
-          {/each}
-        </div>
-        {#if currentLineObj.note}
-          <div class="prompt-note">{currentLineObj.note}</div>
-        {/if}
-        <div class="prompt-nav">
-          <button
-            type="button"
-            class="mini-nav-btn"
-            onclick={() => audioSession.prevLine(activeSet.lines.length)}
-          >
-            ← 上一句
-          </button>
-          <span class="tnum prompt-idx">
-            {(audioSession.lineIdx % activeSet.lines.length) + 1} / {activeSet.lines.length}
-          </span>
-          <button
-            type="button"
-            class="mini-nav-btn"
-            onclick={() => audioSession.nextLine(activeSet.lines.length)}
-          >
-            下一句 →
-          </button>
-        </div>
       </div>
     {:else if audioSession.mode === 'checkup'}
       <div class="checkup-box">
@@ -543,11 +786,19 @@
     flex-shrink: 0;
   }
 
+  .script-subbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
   .tag-row {
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
   .tag-chip {
     font-size: var(--fs-10);
@@ -556,6 +807,32 @@
     padding: 2px 7px;
     border-radius: 999px;
   }
+  .view-seg {
+    display: inline-flex;
+    align-items: center;
+    background: var(--paper-3);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .view-seg-btn {
+    border: 0;
+    background: transparent;
+    color: var(--ink-3);
+    font-size: var(--fs-11);
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.14s ease, color 0.14s ease;
+  }
+  .view-seg-btn.active {
+    background: var(--paper-card);
+    color: var(--ink-1);
+    box-shadow: var(--shadow);
+  }
 
   .prompt-box {
     background: var(--paper-3);
@@ -563,6 +840,9 @@
     padding: 12px 14px;
     margin-bottom: 12px;
     border: 1px solid var(--hairline);
+  }
+  .prompt-box-flow {
+    padding: 10px 12px 10px;
   }
   .prompt-tip {
     font-size: var(--fs-11);
@@ -660,6 +940,69 @@
   .prompt-idx {
     font-size: var(--fs-12);
     color: var(--ink-3);
+  }
+  .flow-stage {
+    position: relative;
+  }
+  .flow-viewport {
+    height: 204px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px 4px 28px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 88%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 88%, transparent 100%);
+  }
+  .flow-para {
+    margin: 0 0 12px;
+    font-size: var(--fs-16);
+    font-weight: 500;
+    line-height: 1.88;
+    letter-spacing: 0.02em;
+    color: var(--ink-1);
+  }
+  .flow-para:last-child {
+    margin-bottom: 0;
+  }
+  .flow-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .flow-play-btn.is-running {
+    background: var(--crayon-mint-soft);
+    color: var(--crayon-mint-ink);
+    border-color: var(--crayon-mint);
+    font-weight: 600;
+  }
+  .flow-speed-seg {
+    display: inline-flex;
+    align-items: center;
+    background: var(--paper-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .flow-speed-btn {
+    border: 0;
+    background: transparent;
+    color: var(--ink-3);
+    font-size: var(--fs-11);
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .flow-speed-btn.active {
+    background: var(--crayon-lavender-soft);
+    color: var(--crayon-lavender-ink);
+  }
+  .mini-nav-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
   }
 
   .checkup-box {

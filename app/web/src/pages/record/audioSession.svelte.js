@@ -11,6 +11,7 @@ import { extractAudioFrames, summarize, pitchName } from '../../core/index.js';
 import { ui } from '../../state/ui.svelte.js';
 import { settings } from '../../state/settings.svelte.js';
 import { alertDlg } from '../../ui/dialog.js';
+import { acquireScreenWake, releaseScreenWake } from '../../ui/wakeLock.js';
 
 /** 将单声道 Float32Array 编码为 16-bit PCM WAV Blob，保证回放与导出通用兼容 */
 export function encodeWavBlob(pcm, sampleRate) {
@@ -253,6 +254,7 @@ class AudioSessionState {
 
     this.#mic = mic;
     this.recording = true;
+    acquireScreenWake('record');
     if (typeof document !== 'undefined') document.body.classList.add('rec-on');
 
     const startedAt = performance.now();
@@ -322,6 +324,7 @@ class AudioSessionState {
     const mic = this.#mic;
     this.#mic = null;
     this.recording = false;
+    releaseScreenWake('record');
     if (this.#tickTimer) {
       clearInterval(this.#tickTimer);
       this.#tickTimer = null;

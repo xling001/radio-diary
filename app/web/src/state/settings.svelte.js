@@ -32,7 +32,7 @@ class SettingsState {
       this.autoJump = aj !== null ? aj !== 'false' : true;
 
       const md = Number(localStorage.getItem(MAX_DUR_KEY) || 120);
-      this.maxRecSecs = [60, 90, 120, 180].includes(md) ? md : 120;
+      this.maxRecSecs = [60, 120, 180, 300].includes(md) ? md : 120;
 
       const fh = Number(localStorage.getItem(FLOOR_HZ_KEY) || 160);
       this.floorTargetHz = [150, 155, 160, 165].includes(fh) ? fh : 160;
@@ -69,7 +69,7 @@ class SettingsState {
   }
 
   cycleMaxDuration() {
-    const steps = [60, 90, 120, 180];
+    const steps = [60, 120, 180, 300];
     const idx = steps.indexOf(this.maxRecSecs);
     this.maxRecSecs = steps[(idx + 1) % steps.length];
     try { localStorage.setItem(MAX_DUR_KEY, String(this.maxRecSecs)); } catch {}

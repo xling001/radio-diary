@@ -7,8 +7,8 @@
   import { TakeStore } from '../../store/takes.js';
   import { confirmDlg } from '../../ui/dialog.js';
 
-  const DUR_STEPS = [60, 90, 120, 180];
-  const APP_VERSION = '2.1.5';
+  const DUR_STEPS = [60, 120, 180, 300];
+  const APP_VERSION = '2.1.6';
   const VIEW_NAMES = {
     record: '练习',
     analysis: '分析',
@@ -196,6 +196,9 @@
           </button>
         {/each}
       </div>
+      {#if settings.maxRecSecs === 300}
+        <div class="set-desc">5 分钟档适合清唱整首歌，单条无损音频约占 25～30 MB 本地空间。</div>
+      {/if}
     </div>
   </section>
 
@@ -307,7 +310,7 @@
   </section>
 
   <div class="ver-foot">
-    电波日记 v2.1.5 · 声学内核 v{ALGO_VERSION} · Soft Crayon
+    电波日记 v{APP_VERSION} · 声学内核 v{ALGO_VERSION} · Soft Crayon
   </div>
 </div>
 

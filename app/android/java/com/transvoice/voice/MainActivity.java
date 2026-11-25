@@ -277,6 +277,33 @@ public class MainActivity extends Activity {
                 act.finish();
             }
         }
+
+        public static class KeepScreenOnRunnable implements Runnable {
+            private final Activity act;
+            private final boolean enable;
+            KeepScreenOnRunnable(Activity a, boolean e) {
+                this.act = a;
+                this.enable = e;
+            }
+            @Override
+            public void run() {
+                if (act == null || act.isFinishing()) return;
+                android.view.Window w = act.getWindow();
+                if (w == null) return;
+                if (enable) {
+                    w.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                } else {
+                    w.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                }
+            }
+        }
+
+        @JavascriptInterface
+        public void setKeepScreenOn(boolean enable) {
+            if (act != null) {
+                act.runOnUiThread(new KeepScreenOnRunnable(act, enable));
+            }
+        }
     }
 
     @Override
@@ -418,6 +445,15 @@ public class MainActivity extends Activity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        android.view.Window w = getWindow();
+        if (w != null) {
+            w.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+        super.onPause();
     }
 
     @Override
