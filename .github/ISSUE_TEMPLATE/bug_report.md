@@ -10,8 +10,8 @@ assignees: ''
 请简要描述发生了什么，以及你预期原本应该看到什么。
 
 **运行环境**
-- 端类型：[例如 Android APK / 桌面浏览器 Chrome / Edge]
-- 软件版本：[例如 v2.0.1]
+- 端类型：[例如 Android APK / iOS Safari PWA / 桌面浏览器 Chrome / Edge]
+- 软件版本：[例如 v2.1.6]
 - 设备与系统版本：[例如 Android 14 / Windows 11]
 - 音频输入来源：[实时麦克风 / 本地音频导入]
 
